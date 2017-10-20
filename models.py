@@ -6,8 +6,11 @@ import torchvision
 import torchvision.transforms as transforms
 from torch.autograd import Variable
 
+# Hyperparameters
 channel_size = 3
+residual_num = 6
 
+# Discriminator for a 128 * 128 image
 class D_128(nn.Module):
 	def __init__(self):
 		super(D_128, self).__init__()
@@ -43,10 +46,12 @@ class D_128(nn.Module):
 		act = self.layer2(act)
 		act = self.layer3(act)
 		act = self.layer4(act)
+		act = act.view(act.size(0), -1)
 		scores = F.sigmoid(self.fc(act))
 		return scores
 
 
+# Generator for a 128 * 128 image
 class G_128(nn.Module):
 	residual_num = 6
 
