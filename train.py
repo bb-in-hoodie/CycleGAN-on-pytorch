@@ -9,11 +9,13 @@ import time
 
 import models as m
 
-# Hyperparameters
+# Settings
 image_size = 128
 image_location = './data/CelebA_Man2Woman/train'
-checkpoint = 100
+checkpoint_log = 100
+checkpoint_save_image = 1000
 
+# Hyperparameters
 lr_G = 0.0002
 lr_D = 0.0001
 cc_lambda = 10 # lambda of cycle-consistency loss
@@ -105,23 +107,24 @@ for epoch in range(total_epoch):
 
 
 		### 1. Train the ally discriminator that the current image is a real one
-		ZeroGrad()
 		dis_real_score = dis_ally(image)
 		dis_real_loss = torch.mean((ones - dis_real_score)**2)
+
+		ZeroGrad()
 		dis_real_loss.backward()
 		dis_ally_optim.step()
 
 		### 2. Trian the enemy discriminator that the created image is a fake one
-		ZeroGrad()
 		fake_enemy_image = gen_enemy(image)
 		# When training the enemy discriminator, use a fake image chosen from the pool
 		dis_fake_score = dis_enemy(fake_enemy_image)
 		dis_fake_loss = torch.mean(dis_fake_score**2) # It is equal to '(zeros - fake score)**2'
+
+		ZeroGrad()
 		dis_fake_loss.backward()
 		dis_enemy_optim.step()
 
 		### 3-1. Train the enemy generator that the fake image should looks realistic
-		ZeroGrad()
 		fake_enemy_image = gen_enemy(image)
 		# When training the enemy discriminator, use a fake image chosen from the pool
 		dis_fake_score = dis_enemy(fake_enemy_image)
@@ -133,20 +136,22 @@ for epoch in range(total_epoch):
 
 		### 3-3. Sum those two losses and update the weights
 		loss = gen_fake_loss + (cc_lambda * cc_loss)
+
+		ZeroGrad()
 		loss.backward()
 		gen_ally_optim.step()
 		gen_enemy_optim.step()
 
 		# At each checkpoint, print the progress result and save an image
-		if (index % checkpoint == 0):
+		if (index % checkpoint_log == 0):
 			print("[%d, %d]-------------------------------------------"
 				%(epoch, index))
-			print("Discriminator - real loss : %.4f, fake loss : %.4f"
+			print("Discriminator real loss : %.4f, Discriminator fake loss : %.4f"
 				%(dis_real_loss.data[0], dis_fake_loss.data[0]))
 			print("Generator fake loss : %.4f, Cycle-consistency loss : %.4f"
 				%(gen_fake_loss.data[0], cc_loss.data[0]))
 
-		if (index % checkpoint == 0):
+		if (index % checkpoint_save_image == 0):
 			original_img = image.view(image.size(0), 3, image_size, image_size)
 			torchvision.utils.save_image(original_img.data, "./result/" + str(epoch) + "-" + str(index) + "_1.png")
 			fake_img = fake_enemy_image.view(fake_enemy_image.size(0), 3, image_size, image_size)
@@ -160,5 +165,19 @@ for epoch in range(total_epoch):
 			print("\nExecution time : %dh %dm %ds"%(hours, mins, secs))
 			print("====================================================\n")
 
-
 		index += 1
+
+# Save the models
+torch.save(gen_a.state_dict(), './models/gen_a.pkl')
+torch.save(gen_b.state_dict(), './models/gen_b.pkl')
+torch.save(dis_a.state_dict(), './models/dis_a.pkl')
+torch.save(dis_b.state_dict(), './models/dis_b.pkl')
+
+# Execution time
+exec_time = time.time() - init_time
+hours = int(exec_time/3600)
+mins = int((exec_time%3600)/60)
+secs = int((exec_time%60))
+print("====================================================")
+print("Total execution time : %dh %dm %ds"%(hours, mins, secs))
+print("====================================================")
