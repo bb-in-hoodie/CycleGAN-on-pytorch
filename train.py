@@ -12,15 +12,15 @@ import models as m
 # Settings
 image_size = 128
 image_location = './data/CelebA_Man2Woman/train'
-checkpoint_log = 100
-checkpoint_save_image = 1000
+checkpoint_log = 1000
+checkpoint_save_image = 5000
 
 # Hyperparameters
 lr_G = 0.0002
 lr_D = 0.0001
 cc_lambda = 10 # lambda of cycle-consistency loss
 batch_size = 1
-total_epoch = 3
+total_epoch = 100
 
 # Initial time
 init_time = time.time()
@@ -154,25 +154,21 @@ for epoch in range(total_epoch):
 
 		if (index % checkpoint_save_image == 0):
 			original_img = image.view(image.size(0), 3, image_size, image_size)
-			torchvision.utils.save_image(original_img.data, "./result/" + str(epoch) + "-" + str(index) + "_1.png")
+			torchvision.utils.save_image(original_img.data, "./result/" + str(epoch) + "_" + str(index) + " [1].png")
 			fake_img = fake_enemy_image.view(fake_enemy_image.size(0), 3, image_size, image_size)
-			torchvision.utils.save_image(fake_img.data, "./result/" + str(epoch) + "-" + str(index)  + "_2.png")
+			torchvision.utils.save_image(fake_img.data, "./result/" + str(epoch) + "_" + str(index)  + " [2].png")
 
 			# Printing the execution time
 			exec_time = time.time() - init_time
 			hours = int(exec_time/3600)
 			mins = int((exec_time%3600)/60)
 			secs = int((exec_time%60))
+			print("[%d, %d]-------------------------------------------"
+				%(epoch, index))
 			print("\nExecution time : %dh %dm %ds"%(hours, mins, secs))
 			print("====================================================\n")
 
 		index += 1
-
-# Save the models
-torch.save(gen_a.state_dict(), './models/gen_a.pkl')
-torch.save(gen_b.state_dict(), './models/gen_b.pkl')
-torch.save(dis_a.state_dict(), './models/dis_a.pkl')
-torch.save(dis_b.state_dict(), './models/dis_b.pkl')
 
 # Execution time
 exec_time = time.time() - init_time
@@ -182,3 +178,9 @@ secs = int((exec_time%60))
 print("====================================================")
 print("Total execution time : %dh %dm %ds"%(hours, mins, secs))
 print("====================================================")
+
+# Save the models
+torch.save(gen_a.state_dict(), './models/gen_a.pkl')
+torch.save(gen_b.state_dict(), './models/gen_b.pkl')
+torch.save(dis_a.state_dict(), './models/dis_a.pkl')
+torch.save(dis_b.state_dict(), './models/dis_b.pkl')
