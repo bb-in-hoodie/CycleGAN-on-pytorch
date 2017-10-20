@@ -38,18 +38,6 @@ def ZeroGrad():
 	gen_b.zero_grad()
 	dis_b.zero_grad()	
 
-# If cuda is available, activate it
-print("[CUDA Information]")
-if(torch.cuda.is_available()):
-	print("CUDA is available : Activate CUDA fuctionality")
-	gen_a = gen_a.cuda()
-	dis_a = dis_a.cuda()
-	gen_b = gen_b.cuda()
-	dis_b = dis_b.cuda()
-	ones = ones.cuda()
-else:
-	print("CUDA is not available")
-
 # Load images (label - 0: type a, 1: type b)
 transforms = t.Compose([t.Scale(image_size), t.ToTensor()])
 train_folder = torchvision.datasets.ImageFolder(root = image_location, transform = transforms)
@@ -64,6 +52,19 @@ dis_b_optim = optim.Adam(dis_b.parameters(), lr=lr_D)
 print("[Network Model Information]")
 print(gen_a)
 print(dis_a)
+print()
+
+# If cuda is available, activate it
+print("[CUDA Information]")
+if(torch.cuda.is_available()):
+	print("CUDA is available : Activate CUDA fuctionality")
+	gen_a = gen_a.cuda()
+	dis_a = dis_a.cuda()
+	gen_b = gen_b.cuda()
+	dis_b = dis_b.cuda()
+	ones = ones.cuda()
+else:
+	print("CUDA is not available")
 print()
 
 # Train
