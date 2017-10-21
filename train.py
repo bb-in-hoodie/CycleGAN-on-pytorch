@@ -12,8 +12,8 @@ import models as m
 # Settings
 image_size = 128
 image_location = './data/CelebA_Man2Woman/train'
-checkpoint_log = 1000
-checkpoint_save_image = 5000
+checkpoint_log = 100
+checkpoint_save_image = 500
 
 # Hyperparameters
 lr_G = 0.0002
@@ -30,7 +30,6 @@ gen_a = m.G_128()
 dis_a = m.D_128()
 gen_b = m.G_128()
 dis_b = m.D_128()
-ones = Variable(torch.ones(batch_size))
 
 def ZeroGrad():
 	gen_a.zero_grad()
@@ -38,10 +37,9 @@ def ZeroGrad():
 	gen_b.zero_grad()
 	dis_b.zero_grad()	
 
-# Load images (label - 0: type a, 1: type b)
-transforms = t.Compose([t.Scale(image_size), t.ToTensor()])
-train_folder = torchvision.datasets.ImageFolder(root = image_location, transform = transforms)
-train_loader = torch.utils.data.DataLoader(train_folder, batch_size = batch_size, shuffle = True)
+# Loss Function
+loss_fun_MSE = nn.MSELoss()
+loss_fun_L1 = nn.L1Loss()
 
 # Optimizer
 gen_a_optim = optim.Adam(gen_a.parameters(), lr=lr_G)
@@ -62,18 +60,24 @@ if(torch.cuda.is_available()):
 	dis_a = dis_a.cuda()
 	gen_b = gen_b.cuda()
 	dis_b = dis_b.cuda()
-	ones = ones.cuda()
 else:
 	print("CUDA is not available")
 print()
+
+# Load images (label - 0: type a, 1: type b)
+transforms = t.Compose([t.Scale(image_size), t.ToTensor()])
+train_folder = torchvision.datasets.ImageFolder(root = image_location, transform = transforms)
+train_loader = torch.utils.data.DataLoader(train_folder, batch_size = batch_size, shuffle = True)
 
 # Train
 for epoch in range(total_epoch):
 	index = 1
 	for image, label in iter(train_loader):
 
-		# Make the image as a Variable
+		# Make the image as a Variable, create ones and zeros
 		image = Variable(image)
+
+		# Activate cuda if available
 		if (torch.cuda.is_available()):
 			image = image.cuda()
 
@@ -109,7 +113,12 @@ for epoch in range(total_epoch):
 
 		### 1. Train the ally discriminator that the current image is a real one
 		dis_real_score = dis_ally(image)
-		dis_real_loss = torch.mean((ones - dis_real_score)**2)
+
+		ones = Variable(torch.ones(dis_real_score.size()))
+		if(torch.cuda.is_available()):
+			ones = ones.cuda()
+
+		dis_real_loss = loss_fun_MSE(dis_real_score, ones)
 
 		ZeroGrad()
 		dis_real_loss.backward()
@@ -119,7 +128,12 @@ for epoch in range(total_epoch):
 		fake_enemy_image = gen_enemy(image)
 		# When training the enemy discriminator, use a fake image chosen from the pool
 		dis_fake_score = dis_enemy(fake_enemy_image)
-		dis_fake_loss = torch.mean(dis_fake_score**2) # It is equal to '(zeros - fake score)**2'
+
+		zeros = Variable(torch.zeros(dis_fake_score.size()))
+		if(torch.cuda.is_available()):
+			zeros = zeros.cuda()
+
+		dis_fake_loss = loss_fun_MSE(dis_fake_score, zeros)
 
 		ZeroGrad()
 		dis_fake_loss.backward()
@@ -129,11 +143,16 @@ for epoch in range(total_epoch):
 		fake_enemy_image = gen_enemy(image)
 		# When training the enemy discriminator, use a fake image chosen from the pool
 		dis_fake_score = dis_enemy(fake_enemy_image)
-		gen_fake_loss = torch.mean((ones - dis_fake_score)**2)
+
+		ones = Variable(torch.ones(dis_fake_score.size()))
+		if(torch.cuda.is_available()):
+			ones = ones.cuda()
+
+		gen_fake_loss = loss_fun_MSE(dis_fake_score, ones)
 
 		### 3-2. Recover the current image and get cycle-consistency loss
 		recovered_image = gen_ally(fake_enemy_image)
-		cc_loss = torch.mean((image - recovered_image)**2)
+		cc_loss = loss_fun_L1(recovered_image, image)
 
 		### 3-3. Sum those two losses and update the weights
 		loss = gen_fake_loss + (cc_lambda * cc_loss)
@@ -163,8 +182,7 @@ for epoch in range(total_epoch):
 			hours = int(exec_time/3600)
 			mins = int((exec_time%3600)/60)
 			secs = int((exec_time%60))
-			print("[%d, %d]-------------------------------------------"
-				%(epoch, index))
+			print("====================================================\n")
 			print("\nExecution time : %dh %dm %ds"%(hours, mins, secs))
 			print("====================================================\n")
 
