@@ -39,15 +39,14 @@ class D_128(nn.Module):
 			nn.InstanceNorm2d(512, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
-		self.fc = nn.Linear(8*8*512, 1)
+		self.score = nn.Conv2d(512, 1, kernel_size=1, stride=1, padding=0)
 
 	def forward(self, x):
 		act = self.layer1(x) # act: activation
 		act = self.layer2(act)
 		act = self.layer3(act)
 		act = self.layer4(act)
-		act = act.view(act.size(0), -1)
-		scores = F.sigmoid(self.fc(act))
+		scores = F.sigmoid(self.score(act))
 		return scores
 
 

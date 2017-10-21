@@ -12,8 +12,8 @@ import models as m
 # Settings
 image_size = 128
 image_location = './data/CelebA_Man2Woman/train'
-checkpoint_log = 100
-checkpoint_save_image = 500
+checkpoint_log = 1000
+checkpoint_save_image = 5000
 
 # Hyperparameters
 lr_G = 0.0002
@@ -168,8 +168,8 @@ for epoch in range(total_epoch):
 				%(epoch, index))
 			print("Discriminator real loss : %.4f, Discriminator fake loss : %.4f"
 				%(dis_real_loss.data[0], dis_fake_loss.data[0]))
-			print("Generator fake loss : %.4f, Cycle-consistency loss : %.4f"
-				%(gen_fake_loss.data[0], cc_loss.data[0]))
+			print("Generator loss : %.4f, Cycle-consistency loss : %.4f * %.1f (cc_lambda)"
+				%(gen_fake_loss.data[0], cc_loss.data[0], cc_lambda))
 
 		if (index % checkpoint_save_image == 0):
 			original_img = image.view(image.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
@@ -182,8 +182,8 @@ for epoch in range(total_epoch):
 			hours = int(exec_time/3600)
 			mins = int((exec_time%3600)/60)
 			secs = int((exec_time%60))
-			print("====================================================\n")
-			print("\nExecution time : %dh %dm %ds"%(hours, mins, secs))
+			print("====================================================")
+			print("Execution time : %dh %dm %ds"%(hours, mins, secs))
 			print("====================================================\n")
 
 		index += 1
