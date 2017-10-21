@@ -26,17 +26,17 @@ class D_128(nn.Module):
 			)
 		self.layer2 = nn.Sequential(
 			nn.Conv2d(64, 128, kernel_size=kernel, stride=stride, padding=pad),
-			nn.InstanceNorm2d(128),
+			nn.InstanceNorm2d(128, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
 		self.layer3 = nn.Sequential(
 			nn.Conv2d(128, 256, kernel_size=kernel, stride=stride, padding=pad),
-			nn.InstanceNorm2d(256),
+			nn.InstanceNorm2d(256, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
 		self.layer4 = nn.Sequential(
 			nn.Conv2d(256, 512, kernel_size=kernel, stride=stride, padding=pad),
-			nn.InstanceNorm2d(512),
+			nn.InstanceNorm2d(512, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
 		self.fc = nn.Linear(8*8*512, 1)
@@ -60,36 +60,36 @@ class G_128(nn.Module):
 		self.conv_down = nn.Sequential(
 			nn.ReflectionPad2d(3),
 			nn.Conv2d(channel_size, 32, kernel_size=7, stride=1, padding=0),
-			nn.InstanceNorm2d(32),
+			nn.InstanceNorm2d(32, affine=True),
 			nn.ReLU()
 			)
 		self.down1 = nn.Sequential(
 			nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
-			nn.InstanceNorm2d(64),
+			nn.InstanceNorm2d(64, affine=True),
 			nn.ReLU()
 			)
 		self.down2 = nn.Sequential(
 			nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
-			nn.InstanceNorm2d(128),
+			nn.InstanceNorm2d(128, affine=True),
 			nn.ReLU()
 			)
 		self.residual = nn.Sequential(
 			nn.ReflectionPad2d(1),
 			nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
-			nn.InstanceNorm2d(128),
+			nn.InstanceNorm2d(128, affine=True),
 			nn.ReLU(),
 			nn.ReflectionPad2d(1),
 			nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
-			nn.InstanceNorm2d(128)
+			nn.InstanceNorm2d(128, affine=True)
 			)
 		self.up1 = nn.Sequential(
 			nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
-			nn.InstanceNorm2d(64),
+			nn.InstanceNorm2d(64, affine=True),
 			nn.ReLU()
 			)
 		self.up2 = nn.Sequential(
 			nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
-			nn.InstanceNorm2d(32),
+			nn.InstanceNorm2d(32, affine=True),
 			nn.ReLU()
 			)
 		self.conv_up = nn.Sequential(

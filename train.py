@@ -38,8 +38,8 @@ def ZeroGrad():
 	dis_b.zero_grad()	
 
 # Loss Function
-loss_fun_MSE = nn.MSELoss()
-loss_fun_L1 = nn.L1Loss()
+criterion_GAN = nn.MSELoss()
+criterion_CC = nn.L1Loss()
 
 # Optimizer
 gen_a_optim = optim.Adam(gen_a.parameters(), lr=lr_G)
@@ -65,9 +65,9 @@ else:
 print()
 
 # Load images (label - 0: type a, 1: type b)
-transforms = t.Compose([t.Scale(image_size), t.ToTensor()])
-train_folder = torchvision.datasets.ImageFolder(root = image_location, transform = transforms)
-train_loader = torch.utils.data.DataLoader(train_folder, batch_size = batch_size, shuffle = True)
+transforms = t.Compose([t.Scale(image_size), t.ToTensor(), t.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+train_folder = torchvision.datasets.ImageFolder(root=image_location, transform=transforms)
+train_loader = torch.utils.data.DataLoader(train_folder, batch_size=batch_size, shuffle=True)
 
 # Train
 for epoch in range(total_epoch):
@@ -118,7 +118,7 @@ for epoch in range(total_epoch):
 		if(torch.cuda.is_available()):
 			ones = ones.cuda()
 
-		dis_real_loss = loss_fun_MSE(dis_real_score, ones)
+		dis_real_loss = criterion_GAN(dis_real_score, ones)
 
 		ZeroGrad()
 		dis_real_loss.backward()
@@ -133,7 +133,7 @@ for epoch in range(total_epoch):
 		if(torch.cuda.is_available()):
 			zeros = zeros.cuda()
 
-		dis_fake_loss = loss_fun_MSE(dis_fake_score, zeros)
+		dis_fake_loss = criterion_GAN(dis_fake_score, zeros)
 
 		ZeroGrad()
 		dis_fake_loss.backward()
@@ -148,11 +148,11 @@ for epoch in range(total_epoch):
 		if(torch.cuda.is_available()):
 			ones = ones.cuda()
 
-		gen_fake_loss = loss_fun_MSE(dis_fake_score, ones)
+		gen_fake_loss = criterion_GAN(dis_fake_score, ones)
 
 		### 3-2. Recover the current image and get cycle-consistency loss
 		recovered_image = gen_ally(fake_enemy_image)
-		cc_loss = loss_fun_L1(recovered_image, image)
+		cc_loss = criterion_CC(recovered_image, image)
 
 		### 3-3. Sum those two losses and update the weights
 		loss = gen_fake_loss + (cc_lambda * cc_loss)
@@ -172,9 +172,9 @@ for epoch in range(total_epoch):
 				%(gen_fake_loss.data[0], cc_loss.data[0]))
 
 		if (index % checkpoint_save_image == 0):
-			original_img = image.view(image.size(0), 3, image_size, image_size)
+			original_img = image.view(image.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
 			torchvision.utils.save_image(original_img.data, "./result/" + str(epoch) + "_" + str(index) + " [1].png")
-			fake_img = fake_enemy_image.view(fake_enemy_image.size(0), 3, image_size, image_size)
+			fake_img = fake_enemy_image.view(fake_enemy_image.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
 			torchvision.utils.save_image(fake_img.data, "./result/" + str(epoch) + "_" + str(index)  + " [2].png")
 
 			# Printing the execution time
