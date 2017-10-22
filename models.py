@@ -18,7 +18,7 @@ class D_128(nn.Module):
 		kernel = 4 # kernel width
 		pad = 1 # padding size
 		stride = 2 # stride		
-		relu_slope = 0.2 # negative slope of LeakyReLU
+		relu_slope = 0.01 # negative slope of LeakyReLU (0.2 was used in the paper)
 
 		self.layer1 = nn.Sequential(
 			nn.Conv2d(channel_size, 64, kernel_size=kernel, stride=stride, padding=pad),
@@ -39,15 +39,15 @@ class D_128(nn.Module):
 			nn.InstanceNorm2d(512, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
-		self.score = nn.Conv2d(512, 1, kernel_size=1, stride=1, padding=0)
+		self.score = nn.Conv2d(512, 1, kernel_size=3, stride=1, padding=1)
 
 	def forward(self, x):
 		act = self.layer1(x) # act: activation
 		act = self.layer2(act)
 		act = self.layer3(act)
 		act = self.layer4(act)
-		scores = F.sigmoid(self.score(act))
-		return scores
+		result = self.score(act)
+		return result
 
 
 # Generator for a 128 * 128 image
@@ -72,15 +72,21 @@ class G_128(nn.Module):
 			nn.InstanceNorm2d(128, affine=True),
 			nn.ReLU()
 			)
-		self.residual = nn.Sequential(
-			nn.ReflectionPad2d(1),
-			nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
-			nn.InstanceNorm2d(128, affine=True),
-			nn.ReLU(),
-			nn.ReflectionPad2d(1),
-			nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
-			nn.InstanceNorm2d(128, affine=True)
-			)
+
+		# Place residual blocks sequentially
+		residual_list = []
+		for i in range(residual_num):
+			residual_list += [
+					nn.ReflectionPad2d(1),
+					nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
+					nn.InstanceNorm2d(128, affine=True),
+					nn.ReLU(),
+					nn.ReflectionPad2d(1),
+					nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
+					nn.InstanceNorm2d(128, affine=True)
+			]
+		self.residuals = nn.Sequential(*residual_list)
+
 		self.up1 = nn.Sequential(
 			nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
 			nn.InstanceNorm2d(64, affine=True),
@@ -98,11 +104,10 @@ class G_128(nn.Module):
 			)
 
 	def forward(self, x):
-		act = self.conv_down(x)
+		act = self.conv_down(x) # act: activation
 		act = self.down1(act)
 		act = self.down2(act)
-		for i in range(residual_num):
-			act = self.residual(act)
+		act = self.residuals(act)
 		act = self.up1(act)
 		act = self.up2(act)
 		result = self.conv_up(act)
