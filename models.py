@@ -52,10 +52,11 @@ class D_128(nn.Module):
 
 # Generator for a 128 * 128 image
 class G_128(nn.Module):
-	residual_num = 6
 
-	def __init__(self):
+	def __init__(self, residual_num = 6):
 		super(G_128, self).__init__()
+		self.residual_num = residual_num
+
 		self.conv_down = nn.Sequential(
 			nn.ReflectionPad2d(3),
 			nn.Conv2d(channel_size, 32, kernel_size=7, stride=1, padding=0),
@@ -73,10 +74,10 @@ class G_128(nn.Module):
 			nn.ReLU()
 			)
 
-		# Place residual blocks sequentially
-		residual_list = []
-		for i in range(residual_num):
-			residual_list += [
+		# Store residual blocks into a list
+		self.residual_list = []
+		for i in range(self.residual_num):
+			nn_seq = nn.Sequential(
 					nn.ReflectionPad2d(1),
 					nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
 					nn.InstanceNorm2d(128, affine=True),
@@ -84,8 +85,10 @@ class G_128(nn.Module):
 					nn.ReflectionPad2d(1),
 					nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
 					nn.InstanceNorm2d(128, affine=True)
-			]
-		self.residuals = nn.Sequential(*residual_list)
+					)
+			if(torch.cuda.is_available()):
+				nn_seq = nn_seq.cuda()
+			self.residual_list.append(nn_seq) 
 
 		self.up1 = nn.Sequential(
 			nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
@@ -107,7 +110,8 @@ class G_128(nn.Module):
 		act = self.conv_down(x) # act: activation
 		act = self.down1(act)
 		act = self.down2(act)
-		act = self.residuals(act)
+		for i in range(self.residual_num):		
+			act = F.relu(self.residual_list[i](act) + act)
 		act = self.up1(act)
 		act = self.up2(act)
 		result = self.conv_up(act)
