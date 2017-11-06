@@ -8,7 +8,6 @@ from torch.autograd import Variable
 
 # Hyperparameters
 channel_size = 3
-residual_num = 6
 
 # Discriminator for a 128 * 128 image
 class D_128(nn.Module):

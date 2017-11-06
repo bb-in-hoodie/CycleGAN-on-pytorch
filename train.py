@@ -12,13 +12,14 @@ import models as m
 # Settings
 image_size = 128
 image_location = './data/CelebA_Man2Woman/train'
-checkpoint_log = 500 # original : 1000
+checkpoint_log = 1000 # original : 1000
 checkpoint_save_image = 5000
+start_spurt_num = 15 # save images on the first n checkpoints
 
 # Hyperparameters
-lr_G = 0.0002
+lr_G = 0.0002 # (0.0002 on the paper)
 lr_D = 0.0001
-cc_lambda = 10 # lambda of cycle-consistency loss
+cc_lambda = 8 # lambda of cycle-consistency loss (10 on the paper)
 batch_size = 1
 total_epoch = 100
 
@@ -26,9 +27,9 @@ total_epoch = 100
 init_time = time.time()
 
 # Discriminators and generators
-gen_a = m.G_128()
+gen_a = m.G_128(residual_num = 2) # residual_num : the number of residual blocks (6 was used in the paper)
 dis_a = m.D_128()
-gen_b = m.G_128()
+gen_b = m.G_128(residual_num = 2)
 dis_b = m.D_128()
 
 def ZeroGrad():
@@ -171,17 +172,11 @@ for epoch in range(total_epoch):
 			print("Generator loss : %.4f, Cycle-consistency loss : %.4f * %.1f (cc_lambda)"
 				%(gen_fake_loss.data[0], cc_loss.data[0], cc_lambda))
 
-		if ((index % checkpoint_save_image == 0) or (epoch == 0 and index <= 10000 and index % checkpoint_log == 0)):
+		if ((index % checkpoint_save_image == 0) or
+			(epoch == 0 and index <= checkpoint_log * start_spurt_num and index % checkpoint_log == 0)):
 			concat_img = torch.cat([image, fake_enemy_image])
-			print(concat_img.size())
 			concat_img = concat_img.view(concat_img.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
 			torchvision.utils.save_image(concat_img.data, "./result/" + str(epoch) + "_" + str(index) + ".png")
-			'''
-			original_img = image.view(image.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
-			torchvision.utils.save_image(original_img.data, "./result/" + str(epoch) + "_" + str(index) + " [1].png")
-			fake_img = fake_enemy_image.view(fake_enemy_image.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
-			torchvision.utils.save_image(fake_img.data, "./result/" + str(epoch) + "_" + str(index)  + " [2].png")
-			'''
 
 			# Printing the execution time
 			exec_time = time.time() - init_time

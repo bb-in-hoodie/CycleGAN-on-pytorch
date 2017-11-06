@@ -1,6 +1,7 @@
 # PyTorch
 data/*/
 result/*/
+result/hyperparameters.txt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

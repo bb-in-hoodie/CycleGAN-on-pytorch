@@ -1,0 +1,15 @@
+[Training]
+lr_G = 0.0002
+lr_D = 0.0001
+cc_lambda = 8
+batch_size = 1
+total_epoch = 100
+
+[Discriminator]
+kernel = 4
+pad = 1
+stride = 2		
+relu_slope = 0.01
+
+[Generator]
+residual_num = 2
