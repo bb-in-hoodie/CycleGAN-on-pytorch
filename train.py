@@ -12,7 +12,7 @@ import models as m
 # Settings
 image_size = 128
 image_location = './data/CelebA_Man2Woman/train'
-checkpoint_log = 1000
+checkpoint_log = 500 # original : 1000
 checkpoint_save_image = 5000
 
 # Hyperparameters
@@ -171,11 +171,17 @@ for epoch in range(total_epoch):
 			print("Generator loss : %.4f, Cycle-consistency loss : %.4f * %.1f (cc_lambda)"
 				%(gen_fake_loss.data[0], cc_loss.data[0], cc_lambda))
 
-		if (index % checkpoint_save_image == 0):
+		if ((index % checkpoint_save_image == 0) or (epoch == 0 and index <= 10000 and index % checkpoint_log == 0)):
+			concat_img = torch.cat([image, fake_enemy_image])
+			print(concat_img.size())
+			concat_img = concat_img.view(concat_img.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
+			torchvision.utils.save_image(concat_img.data, "./result/" + str(epoch) + "_" + str(index) + ".png")
+			'''
 			original_img = image.view(image.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
 			torchvision.utils.save_image(original_img.data, "./result/" + str(epoch) + "_" + str(index) + " [1].png")
 			fake_img = fake_enemy_image.view(fake_enemy_image.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
 			torchvision.utils.save_image(fake_img.data, "./result/" + str(epoch) + "_" + str(index)  + " [2].png")
+			'''
 
 			# Printing the execution time
 			exec_time = time.time() - init_time
