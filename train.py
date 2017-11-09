@@ -2,12 +2,24 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+from torch.optim import lr_scheduler
 import torchvision
 import torchvision.transforms as t
 from torch.autograd import Variable
 import time
 
 import models as m
+
+# CUDA and cuDNN
+is_CUDA_available = False
+print("[CUDA Information]")
+if(torch.cuda.is_available()):
+	print("CUDA is available : Activate CUDA fuctionality")
+	is_CUDA_available = True
+	torch.backends.cudnn.benchmark = True
+else:
+	print("CUDA is not available")
+print()
 
 # Settings
 image_size = 128
@@ -19,6 +31,9 @@ start_spurt_num = 15 # save images on the first n checkpoints
 # Hyperparameters
 lr_G = 0.0002 # (0.0002 on the paper)
 lr_D = 0.00003 # (0.0001 on the paper)
+step_size = 2 # (100 on the paper)
+gamma = 0.5
+
 cc_lambda = 6 # lambda of cycle-consistency loss (10 on the paper)
 batch_size = 1
 total_epoch = 10
@@ -47,6 +62,10 @@ gen_a_optim = optim.Adam(gen_a.parameters(), lr=lr_G)
 dis_a_optim = optim.Adam(dis_a.parameters(), lr=lr_D)
 gen_b_optim = optim.Adam(gen_b.parameters(), lr=lr_G)
 dis_b_optim = optim.Adam(dis_b.parameters(), lr=lr_D)
+gen_a_scheduler = lr_scheduler.StepLR(gen_a_optim, step_size=step_size, gamma=gamma)
+dis_a_scheduler = lr_scheduler.StepLR(dis_a_optim, step_size=step_size, gamma=gamma)
+gen_b_scheduler = lr_scheduler.StepLR(gen_b_optim, step_size=step_size, gamma=gamma)
+dis_b_scheduler = lr_scheduler.StepLR(dis_b_optim, step_size=step_size, gamma=gamma)
 
 print("[Network Model Information]")
 print(gen_a)
@@ -54,16 +73,11 @@ print(dis_a)
 print()
 
 # If cuda is available, activate it
-print("[CUDA Information]")
-if(torch.cuda.is_available()):
-	print("CUDA is available : Activate CUDA fuctionality")
+if(is_CUDA_available):
 	gen_a = gen_a.cuda()
 	dis_a = dis_a.cuda()
 	gen_b = gen_b.cuda()
 	dis_b = dis_b.cuda()
-else:
-	print("CUDA is not available")
-print()
 
 # Load images (label - 0: type a, 1: type b)
 transforms = t.Compose([t.Scale(image_size), t.ToTensor(), t.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -73,13 +87,20 @@ train_loader = torch.utils.data.DataLoader(train_folder, batch_size=batch_size, 
 # Train
 for epoch in range(total_epoch):
 	index = 1
+	
+	# Scheduler (Decrease the learning rates)
+	gen_a_scheduler.step()
+	dis_a_scheduler.step()
+	gen_b_scheduler.step()
+	dis_b_scheduler.step()
+
 	for image, label in iter(train_loader):
 
 		# Make the image as a Variable, create ones and zeros
 		image = Variable(image)
 
 		# Activate cuda if available
-		if (torch.cuda.is_available()):
+		if (is_CUDA_available):
 			image = image.cuda()
 
 		# Set the generators and the discriminators		
@@ -116,7 +137,7 @@ for epoch in range(total_epoch):
 		dis_real_score = dis_ally(image)
 
 		ones = Variable(torch.ones(dis_real_score.size()))
-		if(torch.cuda.is_available()):
+		if(is_CUDA_available):
 			ones = ones.cuda()
 
 		dis_real_loss = criterion_GAN(dis_real_score, ones)
@@ -131,7 +152,7 @@ for epoch in range(total_epoch):
 		dis_fake_score = dis_enemy(fake_enemy_image)
 
 		zeros = Variable(torch.zeros(dis_fake_score.size()))
-		if(torch.cuda.is_available()):
+		if(is_CUDA_available):
 			zeros = zeros.cuda()
 
 		dis_fake_loss = criterion_GAN(dis_fake_score, zeros)
@@ -146,7 +167,7 @@ for epoch in range(total_epoch):
 		dis_fake_score = dis_enemy(fake_enemy_image)
 
 		ones = Variable(torch.ones(dis_fake_score.size()))
-		if(torch.cuda.is_available()):
+		if(is_CUDA_available):
 			ones = ones.cuda()
 
 		gen_fake_loss = criterion_GAN(dis_fake_score, ones)
@@ -165,12 +186,17 @@ for epoch in range(total_epoch):
 
 		# At each checkpoint, print the progress result and save an image
 		if (index % checkpoint_log == 0):
+			cur_lr_G, cur_lr_D = lr_G, lr_D
+			for group in gen_a_optim.param_groups:
+				cur_lr_G = group['lr']
+			for group in dis_a_optim.param_groups:
+				cur_lr_D = group['lr']
 			print("[%d, %d]-------------------------------------------"
 				%(epoch, index))
-			print("Discriminator real loss : %.4f, Discriminator fake loss : %.4f"
-				%(dis_real_loss.data[0], dis_fake_loss.data[0]))
-			print("Generator loss : %.4f, Cycle-consistency loss : %.4f * %.1f (cc_lambda)"
-				%(gen_fake_loss.data[0], cc_loss.data[0], cc_lambda))
+			print("D lr: %.E, D real loss: %.4f, D fake loss: %.4f"
+				%(cur_lr_D, dis_real_loss.data[0], dis_fake_loss.data[0]))
+			print("G lr: %.E, G loss : %.4f, CC loss : %.4f * %.1f (cc_lambda)"
+				%(cur_lr_G, gen_fake_loss.data[0], cc_loss.data[0], cc_lambda))
 
 		if ((index % checkpoint_save_image == 0) or
 			(epoch == 0 and index <= checkpoint_log * start_spurt_num and index % checkpoint_log == 0)):
