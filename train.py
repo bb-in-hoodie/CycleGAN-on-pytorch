@@ -24,7 +24,7 @@ print()
 # Settings
 image_size = 128
 image_location = './data/CelebA_Man2Woman/train'
-checkpoint_log = 1000 # original : 1000
+checkpoint_log = 1000
 checkpoint_save_image = 5000
 start_spurt_num = 15 # save images on the first n checkpoints
 
@@ -35,7 +35,7 @@ step_size = 2 # (100 on the paper)
 gamma = 0.5
 
 cc_lambda = 6 # lambda of cycle-consistency loss (10 on the paper)
-batch_size = 1
+batch_size = 5
 total_epoch = 10
 
 # Initial time
@@ -200,9 +200,23 @@ for epoch in range(total_epoch):
 
 		if ((index % checkpoint_save_image == 0) or
 			(epoch == 0 and index <= checkpoint_log * start_spurt_num and index % checkpoint_log == 0)):
-			concat_img = torch.cat([image, fake_enemy_image])
-			concat_img = concat_img.view(concat_img.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
+			concat_img = []
+			image_num = image.size(0)
+			fake_image_num = fake_enemy_image.size(0)
+
+			for i in range(image_num):
+				if (i < fake_image_num):
+					concat_img.append(image[i])
+					concat_img.append(fake_enemy_image[i])
+
+			concat_size = len(concat_img)
+			concat_img = torch.cat(concat_img)
+			concat_img = concat_img.view(concat_size, 3, image_size, image_size) / 2 + 0.5
 			torchvision.utils.save_image(concat_img.data, "./result/" + str(epoch) + "_" + str(index) + ".png")
+
+			#concat_img = torch.cat([image, fake_enemy_image])
+			#concat_img = concat_img.view(concat_img.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
+			#torchvision.utils.save_image(concat_img.data, "./result/" + str(epoch) + "_" + str(index) + ".png")
 
 			# Printing the execution time
 			exec_time = time.time() - init_time
