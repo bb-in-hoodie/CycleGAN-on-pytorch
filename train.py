@@ -9,6 +9,7 @@ from torch.autograd import Variable
 import time
 
 import models as m
+from switching_sampler import SwitchingBatchSampler
 
 # CUDA and cuDNN
 is_CUDA_available = False
@@ -24,13 +25,13 @@ print()
 # Settings
 image_size = 128
 image_location = './data/CelebA_Man2Woman/train'
-checkpoint_log = 1000
+checkpoint_log = 500
 checkpoint_save_image = 5000
 start_spurt_num = 15 # save images on the first n checkpoints
 
 # Hyperparameters
 lr_G = 0.0002 # (0.0002 on the paper)
-lr_D = 0.00003 # (0.0001 on the paper)
+lr_D = 0.0001 # (0.0001 on the paper)
 step_size = 2 # (100 on the paper)
 gamma = 0.5
 
@@ -82,7 +83,11 @@ if(is_CUDA_available):
 # Load images (label - 0: type a, 1: type b)
 transforms = t.Compose([t.Scale(image_size), t.ToTensor(), t.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
 train_folder = torchvision.datasets.ImageFolder(root=image_location, transform=transforms)
-train_loader = torch.utils.data.DataLoader(train_folder, batch_size=batch_size, shuffle=True)
+if batch_size == 1:
+	train_loader = torch.utils.data.DataLoader(train_folder, batch_size=batch_size, shuffle=True)
+else:
+	sampler = SwitchingBatchSampler(train_folder, batch_size)
+	train_loader = torch.utils.data.DataLoader(train_folder, batch_sampler=sampler)
 
 # Train
 for epoch in range(total_epoch):
