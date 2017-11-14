@@ -31,11 +31,11 @@ start_spurt_num = 15 # save images on the first n checkpoints
 
 # Hyperparameters
 lr_G = 0.0002 # (0.0002 on the paper)
-lr_D = 0.0001 # (0.0001 on the paper)
+lr_D = 0.00003 # (0.0001 on the paper)
 step_size = 2 # (100 on the paper)
 gamma = 0.5
 
-cc_lambda = 6 # lambda of cycle-consistency loss (10 on the paper)
+cc_lambda = 5 # lambda of cycle-consistency loss (10 on the paper)
 batch_size = 5
 total_epoch = 10
 

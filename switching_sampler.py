@@ -18,69 +18,66 @@ class SwitchingBatchSampler(Sampler):
 			else:
 				count += 1
 
-		print("Total Images: %d [Class 0: %d, Class 1: %d]"%(self.data_len, count, (self.data_len-count)))
-
-		# always first half should smaller than second half
-		if count >= (self.data_len/2):
-			self.first_iter = iter(torch.randperm(self.data_len - count) + count)
-			self.second_iter = iter(torch.randperm(count))
-		else:
-			self.first_iter = iter(torch.randperm(count))
-			self.second_iter = iter(torch.randperm(self.data_len - count) + count)
+		print("Total Images: %d [Class 0: %d, Class 1: %d]\n"%(self.data_len, count, (self.data_len-count)))
 
 		self.first_size = count
-		self.turn = 0
+
+		if random.random() > 0.5:
+			self.turn = 0
+		else:
+			self.turn = 1
+
 
 	def __iter__(self):
-		count = 0 # Counts how many imgs of first iter has been returned
+		# Initialize both iters
+		self.first_iter = iter(torch.randperm(self.first_size))
+		self.second_iter = iter(torch.randperm(self.data_len - self.first_size) + self.first_size)
+
+		# Counting variables
+		i = 0
+		count_first = 0 # Counts how many imgs of first iter has been returned
+		count_second = 0 # Counts second iter		
 		batch = []
-		for i in range(self.data_len):
+
+		# Until no data left, keep iterating
+		while count_first+count_second < self.data_len:
 			# Fill the batch
 			if self.turn == 0:
-				if count == self.first_size:
+				if count_first == self.first_size:
 					self.turn = 1
 					if len(batch) > 0 and not self.drop_last:
 						yield batch
 					batch = []    				
 				else:
 					batch.append(next(self.first_iter))
-					count += 1
+					count_first += 1
+					i += 1
 			else:
-				batch.append(next(self.second_iter))
-
+				if count_second == (self.data_len-self.first_size):
+					self.turn = 0
+					if len(batch) > 0 and not self.drop_last:
+						yield batch
+					batch = []    	
+				else:
+					batch.append(next(self.second_iter))
+					count_second += 1
+					i += 1
 			# Yield the batch and switch the turn randomly
 			if (i+1) % self.batch_size == 0:
 				yield batch
 				batch = []
-				if count != self.first_size and random.random() > 0.5:
+				if count_first != self.first_size and count_second != (self.data_len-self.first_size) and random.random() > 0.5:
 					self.turn = (self.turn + 1) % 2
 
 		# If drop_last is False, return the rest
 		if len(batch) > 0 and not self.drop_last:
 			yield batch
-	'''
-	def __iter__(self):
-	    batch = []
-	    for idx in self.sampler:
-	        batch.append(idx)
-	        if len(batch) == self.batch_size:
-	            yield batch
-	            batch = []
-	    if len(batch) > 0 and not self.drop_last:
-	        yield batch
-	'''
+
+
 	def __len__(self):
 		if self.drop_last:
-			return (len(self.first_size) // self.batch_size)
-			+ (len(self.data_len - self.first_size) // self.batch_size)
+			return (self.first_size // self.batch_size)
+			+ ((self.data_len - self.first_size) // self.batch_size)
 		else:
-			return ((len(self.first_size) + self.batch_size - 1) // self.batch_size)
-			+ ((len(self.data_len - self.first_size) + self.batch_size - 1) // self.batch_size)
-
-'''
-    def __iter__(self):
-        return iter(range(len(self.data_source)))
-
-    def __len__(self):
-        return self.data_len
-'''
+			return ((self.first_size + self.batch_size - 1) // self.batch_size)
+			+ ((self.data_len - self.first_size + self.batch_size - 1) // self.batch_size)
