@@ -2,7 +2,6 @@ import torch
 import torchvision
 
 def print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss):
-
 	g_lr, d_lr = m.g_lr, m.d_lr
 	for group in m.g_a_optim.param_groups:
 		g_lr = group['lr']
@@ -17,7 +16,6 @@ def print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss):
 
 
 def save_image(image_size, image, fake_enemy_image, epoch, index):		
-
 	concat_img = []
 	image_num = image.size(0)
 	fake_image_num = fake_enemy_image.size(0)
@@ -34,7 +32,6 @@ def save_image(image_size, image, fake_enemy_image, epoch, index):
 
 
 def print_exec_time(exec_time, is_final=False):		
-
 	hours = int(exec_time/3600)
 	mins = int((exec_time%3600)/60)
 	secs = int((exec_time%60))
@@ -47,7 +44,6 @@ def print_exec_time(exec_time, is_final=False):
 
 
 def save_model(m):
-
 	torch.save(m.g_a.state_dict(), './models/gen_a.pkl')
 	torch.save(m.g_b.state_dict(), './models/gen_b.pkl')
 	torch.save(m.d_a.state_dict(), './models/dis_a.pkl')
@@ -55,15 +51,8 @@ def save_model(m):
 
 
 def check_cuda_available():
-
 	is_cuda = False
-
-	print("[CUDA Information]")
 	if(torch.cuda.is_available()):
-		print("CUDA is available : Activate CUDA fuctionality")
 		is_cuda = True
 		torch.backends.cudnn.benchmark = True
-	else:
-		print("CUDA is not available")
-
 	return is_cuda

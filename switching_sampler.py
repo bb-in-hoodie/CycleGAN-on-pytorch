@@ -22,7 +22,7 @@ class SwitchingBatchSampler(Sampler):
 
 		self.first_size = count
 
-		if random.random() > 0.5:
+		if random.uniform(0, 1) > 0.5:
 			self.turn = 0
 		else:
 			self.turn = 1
@@ -30,8 +30,9 @@ class SwitchingBatchSampler(Sampler):
 
 	def __iter__(self):
 		# Initialize both iters
+		second_size = self.data_len - self.first_size
 		self.first_iter = iter(torch.randperm(self.first_size))
-		self.second_iter = iter(torch.randperm(self.data_len - self.first_size) + self.first_size)
+		self.second_iter = iter(torch.randperm(second_size) + self.first_size)
 
 		# Counting variables
 		i = 0
@@ -63,10 +64,10 @@ class SwitchingBatchSampler(Sampler):
 					count_second += 1
 					i += 1
 			# Yield the batch and switch the turn randomly
-			if (i+1) % self.batch_size == 0:
+			if i != 0 and i % self.batch_size == 0:
 				yield batch
 				batch = []
-				if count_first != self.first_size and count_second != (self.data_len-self.first_size) and random.random() > 0.5:
+				if count_first != self.first_size and count_second != second_size and random.uniform(0, 1) > 0.5:
 					self.turn = (self.turn + 1) % 2
 
 		# If drop_last is False, return the rest

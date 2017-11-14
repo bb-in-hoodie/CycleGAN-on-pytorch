@@ -51,7 +51,6 @@ class D_128(nn.Module):
 
 # Generator for a 128 * 128 image
 class G_128(nn.Module):
-
 	def __init__(self, residual_num = 6):
 		super(G_128, self).__init__()
 		self.residual_num = residual_num
