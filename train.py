@@ -10,6 +10,7 @@ import time
 
 import models as m
 from switching_sampler import SwitchingBatchSampler
+from image_buffer import ImageBuffer
 
 # CUDA and cuDNN
 is_CUDA_available = False
@@ -92,7 +93,8 @@ else:
 # Train
 for epoch in range(total_epoch):
 	index = 1
-	
+	image_buffer = ImageBuffer()
+
 	# Scheduler (Decrease the learning rates)
 	gen_a_scheduler.step()
 	dis_a_scheduler.step()
@@ -152,9 +154,10 @@ for epoch in range(total_epoch):
 		dis_ally_optim.step()
 
 		### 2. Trian the enemy discriminator that the created image is a fake one
-		fake_enemy_image = gen_enemy(image)
+		fake_enemy_image = gen_enemy(image)		
+		chosen_image = image_buffer.pop(fake_enemy_image)
 		# When training the enemy discriminator, use a fake image chosen from the pool
-		dis_fake_score = dis_enemy(fake_enemy_image)
+		dis_fake_score = dis_enemy(chosen_image)
 
 		zeros = Variable(torch.zeros(dis_fake_score.size()))
 		if(is_CUDA_available):
@@ -218,6 +221,9 @@ for epoch in range(total_epoch):
 			concat_img = torch.cat(concat_img)
 			concat_img = concat_img.view(concat_size, 3, image_size, image_size) / 2 + 0.5
 			torchvision.utils.save_image(concat_img.data, "./result/" + str(epoch) + "_" + str(index) + ".png")
+
+			chosen_image = chosen_image.view(chosen_image.size(0), 3, image_size, image_size) / 2 + 0.5
+			torchvision.utils.save_image(chosen_image.data, "./result/" + str(epoch) + "_" + str(index) + "_chosen.png")
 
 			#concat_img = torch.cat([image, fake_enemy_image])
 			#concat_img = concat_img.view(concat_img.size(0), 3, image_size, image_size) / 2 + 0.5 # Undo the normalization
