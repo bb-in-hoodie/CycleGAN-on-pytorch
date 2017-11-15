@@ -12,14 +12,14 @@ class Model:
 		self.total_epoch = 10
 
 		# Network architecture
-		self.residual_num = 2
+		self.residual_num = 6
 
 		# Hyperparameters
 		self.g_lr = 0.0002 # (0.0002 on the paper)
-		self.d_lr = 0.00003 # (0.0001 on the paper)
-		self.step_size = 2 # (100 on the paper)
-		self.gamma = 0.5
-		self.cc_lambda = 5 # lambda of cycle-consistency loss (10 on the paper)
+		self.d_lr = 0.0001 # (0.0001 on the paper)
+		self.step_size = 5 # (100 on the paper)
+		self.gamma = 0.1
+		self.cc_lambda = 10 # lambda of cycle-consistency loss (10 on the paper)
 
 		# Discriminators and generators
 		self.g_a = net.G_128(residual_num = self.residual_num) # residual_num : the number of residual blocks (6 was used in the paper)
@@ -67,6 +67,6 @@ class Model:
 	def print_info(self):
 		print("\n[Information] =================================================\n")
 		print("Batch Size: %d, Total Epochs: %d, Residual Blocks: %d, CUDA: %r"%(self.batch_size, self.total_epoch, self.residual_num, self.is_cuda))
-		print("LR Gen: %1.2E, LR Dis: %1.2E (Step Size: %d, Gamma: %.2f)"%(self.g_lr, self.d_lr, self.step_size, self.gamma))
+		print("LR Gen: %1.1E, LR Dis: %1.1E (Step Size: %d, Gamma: %.2f)"%(self.g_lr, self.d_lr, self.step_size, self.gamma))
 		print("CC Lambda: %.2f"%(self.cc_lambda))
 		print("\n===============================================================\n")

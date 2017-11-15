@@ -9,9 +9,9 @@ def print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss):
 		d_lr = group['lr']
 	print("[%d, %d]-------------------------------------------"
 		%(epoch, index))
-	print("D lr: %.E, D real loss: %.4f, D fake loss: %.4f"
+	print("D lr: %1.1E, D real loss: %.4f, D fake loss: %.4f"
 		%(d_lr, d_real_loss.data[0], d_fake_loss.data[0]))
-	print("G lr: %.E, G loss : %.4f, CC loss : %.4f * %.1f (cc_lambda)"
+	print("G lr: %1.1E, G loss : %.4f, CC loss : %.4f * %.1f (cc_lambda)"
 		%(g_lr, g_fake_loss.data[0], cc_loss.data[0], m.cc_lambda))
 
 
