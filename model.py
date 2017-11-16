@@ -16,16 +16,16 @@ class Model:
 
 		# Hyperparameters
 		self.g_lr = 0.0002 # (0.0002 on the paper)
-		self.d_lr = 0.0001 # (0.0001 on the paper)
-		self.step_size = 5 # (100 on the paper)
-		self.gamma = 0.1
-		self.cc_lambda = 10 # lambda of cycle-consistency loss (10 on the paper)
+		self.d_lr = 0.00003 # (0.0001 on the paper)
+		self.step_size = 2 # (100 on the paper)
+		self.gamma = 0.5
+		self.cc_lambda = 5 # lambda of cycle-consistency loss (10 on the paper)
 
 		# Discriminators and generators
-		self.g_a = net.G_128(residual_num = self.residual_num) # residual_num : the number of residual blocks (6 was used in the paper)
-		self.d_a = net.D_128()
-		self.g_b = net.G_128(residual_num = self.residual_num)
-		self.d_b = net.D_128()
+		self.g_a = net.G_128(residual_num=self.residual_num) # residual_num : the number of residual blocks (6 was used in the paper)
+		self.d_a = net.D_128(first_kernels=32)
+		self.g_b = net.G_128(residual_num=self.residual_num)
+		self.d_b = net.D_128(first_kernels=32)
 
 		# Loss Function
 		self.criterion_GAN = nn.MSELoss()

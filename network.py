@@ -11,34 +11,36 @@ channel_size = 3
 
 # Discriminator for a 128 * 128 image
 class D_128(nn.Module):
-	def __init__(self):
+	def __init__(self, first_kernels=64, kernel=4, pad=1, stride=2, relu_slope=0.01, norm="instance"):
 		super(D_128, self).__init__()
 
-		kernel = 4 # kernel width
-		pad = 1 # padding size
-		stride = 2 # stride		
-		relu_slope = 0.01 # negative slope of LeakyReLU (0.2 was used in the paper)
+		self.first_kernels = first_kernels
+		self.kernel = kernel # kernel width
+		self.pad = pad # padding size
+		self.stride = stride # stride		
+		self.relu_slope = relu_slope # negative slope of LeakyReLU (0.2 was used in the paper)
+		self.norm = norm # [instance: InstanceNorm2d, batch: BatchNorm2d]
 
 		self.layer1 = nn.Sequential(
-			nn.Conv2d(channel_size, 64, kernel_size=kernel, stride=stride, padding=pad),
+			nn.Conv2d(channel_size, first_kernels, kernel_size=kernel, stride=stride, padding=pad),
 			nn.LeakyReLU(relu_slope)
 			)
 		self.layer2 = nn.Sequential(
-			nn.Conv2d(64, 128, kernel_size=kernel, stride=stride, padding=pad),
-			nn.InstanceNorm2d(128, affine=True),
+			nn.Conv2d(first_kernels, first_kernels*2, kernel_size=kernel, stride=stride, padding=pad),
+			nn.InstanceNorm2d(first_kernels*2, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
 		self.layer3 = nn.Sequential(
-			nn.Conv2d(128, 256, kernel_size=kernel, stride=stride, padding=pad),
-			nn.InstanceNorm2d(256, affine=True),
+			nn.Conv2d(first_kernels*2, first_kernels*4, kernel_size=kernel, stride=stride, padding=pad),
+			nn.InstanceNorm2d(first_kernels*4, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
 		self.layer4 = nn.Sequential(
-			nn.Conv2d(256, 512, kernel_size=kernel, stride=stride, padding=pad),
-			nn.InstanceNorm2d(512, affine=True),
+			nn.Conv2d(first_kernels*4, first_kernels*8, kernel_size=kernel, stride=stride, padding=pad),
+			nn.InstanceNorm2d(first_kernels*8, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
-		self.score = nn.Conv2d(512, 1, kernel_size=3, stride=1, padding=1)
+		self.score = nn.Conv2d(first_kernels*8, 1, kernel_size=3, stride=1, padding=1)
 
 	def forward(self, x):
 		act = self.layer1(x) # act: activation
@@ -51,24 +53,26 @@ class D_128(nn.Module):
 
 # Generator for a 128 * 128 image
 class G_128(nn.Module):
-	def __init__(self, residual_num = 6):
+	def __init__(self, first_kernels=32, residual_num=6):
 		super(G_128, self).__init__()
+
+		self.first_kernels = first_kernels
 		self.residual_num = residual_num
 
 		self.conv_down = nn.Sequential(
 			nn.ReflectionPad2d(3),
-			nn.Conv2d(channel_size, 32, kernel_size=7, stride=1, padding=0),
-			nn.InstanceNorm2d(32, affine=True),
+			nn.Conv2d(channel_size, first_kernels, kernel_size=7, stride=1, padding=0),
+			nn.InstanceNorm2d(first_kernels, affine=True),
 			nn.ReLU()
 			)
 		self.down1 = nn.Sequential(
-			nn.Conv2d(32, 64, kernel_size=3, stride=2, padding=1),
-			nn.InstanceNorm2d(64, affine=True),
+			nn.Conv2d(first_kernels, first_kernels*2, kernel_size=3, stride=2, padding=1),
+			nn.InstanceNorm2d(first_kernels*2, affine=True),
 			nn.ReLU()
 			)
 		self.down2 = nn.Sequential(
-			nn.Conv2d(64, 128, kernel_size=3, stride=2, padding=1),
-			nn.InstanceNorm2d(128, affine=True),
+			nn.Conv2d(first_kernels*2, first_kernels*4, kernel_size=3, stride=2, padding=1),
+			nn.InstanceNorm2d(first_kernels*4, affine=True),
 			nn.ReLU()
 			)
 
@@ -77,30 +81,30 @@ class G_128(nn.Module):
 		for i in range(self.residual_num):
 			nn_seq = nn.Sequential(
 					nn.ReflectionPad2d(1),
-					nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
-					nn.InstanceNorm2d(128, affine=True),
+					nn.Conv2d(first_kernels*4, first_kernels*4, kernel_size=3, stride=1, padding=0),
+					nn.InstanceNorm2d(first_kernels*4, affine=True),
 					nn.ReLU(),
 					nn.ReflectionPad2d(1),
-					nn.Conv2d(128, 128, kernel_size=3, stride=1, padding=0),
-					nn.InstanceNorm2d(128, affine=True)
+					nn.Conv2d(first_kernels*4, first_kernels*4, kernel_size=3, stride=1, padding=0),
+					nn.InstanceNorm2d(first_kernels*4, affine=True)
 					)
 			if(torch.cuda.is_available()):
 				nn_seq = nn_seq.cuda()
 			self.residual_list.append(nn_seq) 
 
 		self.up1 = nn.Sequential(
-			nn.ConvTranspose2d(128, 64, kernel_size=3, stride=2, padding=1, output_padding=1),
-			nn.InstanceNorm2d(64, affine=True),
+			nn.ConvTranspose2d(first_kernels*4, first_kernels*2, kernel_size=3, stride=2, padding=1, output_padding=1),
+			nn.InstanceNorm2d(first_kernels*2, affine=True),
 			nn.ReLU()
 			)
 		self.up2 = nn.Sequential(
-			nn.ConvTranspose2d(64, 32, kernel_size=3, stride=2, padding=1, output_padding=1),
-			nn.InstanceNorm2d(32, affine=True),
+			nn.ConvTranspose2d(first_kernels*2, first_kernels, kernel_size=3, stride=2, padding=1, output_padding=1),
+			nn.InstanceNorm2d(first_kernels, affine=True),
 			nn.ReLU()
 			)
 		self.conv_up = nn.Sequential(
 			nn.ReflectionPad2d(3),
-			nn.Conv2d(32, channel_size, kernel_size=7, stride=1, padding=0),
+			nn.Conv2d(first_kernels, channel_size, kernel_size=7, stride=1, padding=0),
 			nn.Tanh()
 			)
 
