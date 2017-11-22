@@ -16,8 +16,8 @@ is_cuda = u.check_cuda_available()
 # Settings
 image_size = 128
 image_location = './data/CelebA_Man2Woman/train' #'./data/TestDataset'
-checkpoint_log = 500
-checkpoint_save_image = 5000
+checkpoint_log = 2000
+checkpoint_save_image = 20000
 start_spurt_num = 15 # save images on the first n checkpoints
 
 # Initial time
@@ -25,6 +25,11 @@ init_time = time.time()
 
 # Create a new model
 m = Model(is_cuda)
+
+# Create a new image buffer
+use_buffer = m.buffer_size > 0
+if use_buffer:
+	image_buffer = ImageBuffer(m.buffer_size)
 
 # Load images [0: Type A, 1: Type B]
 transforms = t.Compose([t.Scale(image_size), t.ToTensor(), t.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
@@ -38,7 +43,6 @@ else:
 # Train
 for epoch in range(m.total_epoch):
 	index = 1
-	image_buffer = ImageBuffer()
 	m.scheduler_step()
 
 	for image, label in iter(train_loader):
@@ -71,11 +75,7 @@ for epoch in range(m.total_epoch):
 
 		### 1. Train the ally discriminator that the current image is a real one
 		d_real_score = d_ally(image)
-
-		ones = Variable(torch.ones(d_real_score.size()))
-		if(is_cuda):
-			ones = ones.cuda()
-
+		ones = u.get_class_scores(d_real_score.size(), is_ones=True, noisy=True, is_cuda=is_cuda)
 		d_real_loss = m.criterion_GAN(d_real_score, ones)
 
 		m.zero_grad_all()
@@ -84,14 +84,13 @@ for epoch in range(m.total_epoch):
 
 		### 2. Trian the enemy discriminator that the created image is a fake one
 		fake_enemy_image = g_enemy(image)		
-		chosen_image = image_buffer.pop(fake_enemy_image)
+		if use_buffer:
+			chosen_image = image_buffer.pop(fake_enemy_image)
+		else:
+			chosen_image = fake_enemy_image
 		# When training the enemy discriminator, use a fake image chosen from the pool
 		d_fake_score = d_enemy(chosen_image)
-
-		zeros = Variable(torch.zeros(d_fake_score.size()))
-		if(is_cuda):
-			zeros = zeros.cuda()
-
+		zeros = u.get_class_scores(d_fake_score.size(), is_ones=False, noisy=True, is_cuda=is_cuda)
 		d_fake_loss = m.criterion_GAN(d_fake_score, zeros)
 
 		m.zero_grad_all()
@@ -102,11 +101,7 @@ for epoch in range(m.total_epoch):
 		fake_enemy_image = g_enemy(image)
 		# When training the enemy discriminator, use a fake image chosen from the pool
 		d_fake_score = d_enemy(fake_enemy_image)
-
-		ones = Variable(torch.ones(d_fake_score.size()))
-		if(is_cuda):
-			ones = ones.cuda()
-
+		ones = u.get_class_scores(d_fake_score.size(), is_ones=True, noisy=True, is_cuda=is_cuda)
 		g_fake_loss = m.criterion_GAN(d_fake_score, ones)
 
 		### 3-2. Recover the current image and get cycle-consistency loss

@@ -1,5 +1,26 @@
 import torch
 import torchvision
+from torch.autograd import Variable
+
+def get_class_scores(size, is_ones, noisy=False, is_cuda=False, noise_width=0.3):
+	scores = None
+
+	if noisy:
+		scores = torch.rand(size) * noise_width # [0, 0.3)
+		if is_ones:
+			scores += (1.1-noise_width) # [0.8, 1.1)
+	else:
+		if is_ones:
+			scores = torch.ones(size) # only 1
+		else:
+			scores = torch.zeros(size) # only 0
+			
+	scores = Variable(scores)
+
+	if is_cuda:
+		scores = scores.cuda()
+
+	return scores
 
 def print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss):
 	g_lr, d_lr = m.g_lr, m.d_lr

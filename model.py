@@ -8,24 +8,28 @@ class Model:
 	def __init__(self, is_cuda=False):
 		# Training settings
 		self.is_cuda = is_cuda
-		self.batch_size = 5
+		self.batch_size = 1
 		self.total_epoch = 10
+		self.buffer_size = 50
 
 		# Network architecture
-		self.residual_num = 6
+		self.residual_num = 6 # the number of residual blocks (6 was used in the paper)
+		self.d_first_kernels = 16
+		self.d_norm = "instance"
+		self.g_norm = "instance"
 
 		# Hyperparameters
 		self.g_lr = 0.0002 # (0.0002 on the paper)
-		self.d_lr = 0.00003 # (0.0001 on the paper)
-		self.step_size = 2 # (100 on the paper)
-		self.gamma = 0.5
-		self.cc_lambda = 5 # lambda of cycle-consistency loss (10 on the paper)
+		self.d_lr = 0.0001 # (0.0001 on the paper)
+		self.step_size = 5 # (100 on the paper)
+		self.gamma = 0.1
+		self.cc_lambda = 8 # lambda of cycle-consistency loss (10 on the paper)
 
 		# Discriminators and generators
-		self.g_a = net.G_128(residual_num=self.residual_num) # residual_num : the number of residual blocks (6 was used in the paper)
-		self.d_a = net.D_128(first_kernels=32)
-		self.g_b = net.G_128(residual_num=self.residual_num)
-		self.d_b = net.D_128(first_kernels=32)
+		self.g_a = net.G_128(residual_num=self.residual_num, norm=self.g_norm)
+		self.d_a = net.D_128(first_kernels=self.d_first_kernels, norm=self.d_norm)
+		self.g_b = net.G_128(residual_num=self.residual_num, norm=self.g_norm)
+		self.d_b = net.D_128(first_kernels=self.d_first_kernels, norm=self.d_norm)
 
 		# Loss Function
 		self.criterion_GAN = nn.MSELoss()

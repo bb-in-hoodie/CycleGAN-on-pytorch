@@ -19,60 +19,75 @@ class D_128(nn.Module):
 		self.pad = pad # padding size
 		self.stride = stride # stride		
 		self.relu_slope = relu_slope # negative slope of LeakyReLU (0.2 was used in the paper)
-		self.norm = norm # [instance: InstanceNorm2d, batch: BatchNorm2d]
+		# [instance: InstanceNorm2d, batch: BatchNorm2d]
+		if norm == "instance":
+			self.norm = nn.InstanceNorm2d
+		else:
+			self.norm = nn.BatchNorm2d
 
 		self.layer1 = nn.Sequential(
-			nn.Conv2d(channel_size, first_kernels, kernel_size=kernel, stride=stride, padding=pad),
+			nn.Conv2d(channel_size, first_kernels, kernel_size=kernel, stride=stride, padding=pad), # 128 -> 64
 			nn.LeakyReLU(relu_slope)
 			)
 		self.layer2 = nn.Sequential(
-			nn.Conv2d(first_kernels, first_kernels*2, kernel_size=kernel, stride=stride, padding=pad),
-			nn.InstanceNorm2d(first_kernels*2, affine=True),
+			nn.Conv2d(first_kernels, first_kernels*2, kernel_size=kernel, stride=stride, padding=pad), # 64 -> 32
+			self.norm(first_kernels*2, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
 		self.layer3 = nn.Sequential(
-			nn.Conv2d(first_kernels*2, first_kernels*4, kernel_size=kernel, stride=stride, padding=pad),
-			nn.InstanceNorm2d(first_kernels*4, affine=True),
+			nn.Conv2d(first_kernels*2, first_kernels*4, kernel_size=kernel, stride=stride, padding=pad), # 32 -> 16
+			self.norm(first_kernels*4, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
 		self.layer4 = nn.Sequential(
-			nn.Conv2d(first_kernels*4, first_kernels*8, kernel_size=kernel, stride=stride, padding=pad),
-			nn.InstanceNorm2d(first_kernels*8, affine=True),
+			nn.Conv2d(first_kernels*4, first_kernels*8, kernel_size=kernel, stride=stride, padding=pad), # 16 -> 8
+			self.norm(first_kernels*8, affine=True),
 			nn.LeakyReLU(relu_slope)
 			)
-		self.score = nn.Conv2d(first_kernels*8, 1, kernel_size=3, stride=1, padding=1)
+		self.layer5 = nn.Sequential(
+			nn.Conv2d(first_kernels*8, first_kernels*16, kernel_size=kernel, stride=stride, padding=pad), # 8 -> 4
+			self.norm(first_kernels*16, affine=True),
+			nn.LeakyReLU(relu_slope)
+			)
+		self.score = nn.Conv2d(first_kernels*16, 1, kernel_size=3, stride=1, padding=1) # 4 -> 4
 
 	def forward(self, x):
 		act = self.layer1(x) # act: activation
 		act = self.layer2(act)
 		act = self.layer3(act)
 		act = self.layer4(act)
+		act = self.layer5(act)
 		result = self.score(act)
 		return result
 
 
 # Generator for a 128 * 128 image
 class G_128(nn.Module):
-	def __init__(self, first_kernels=32, residual_num=6):
+	def __init__(self, first_kernels=32, residual_num=6, norm="instance"):
 		super(G_128, self).__init__()
 
 		self.first_kernels = first_kernels
 		self.residual_num = residual_num
+		# [instance: InstanceNorm2d, batch: BatchNorm2d]
+		if norm == "instance":
+			self.norm = nn.InstanceNorm2d
+		else:
+			self.norm = nn.BatchNorm2d
 
 		self.conv_down = nn.Sequential(
 			nn.ReflectionPad2d(3),
 			nn.Conv2d(channel_size, first_kernels, kernel_size=7, stride=1, padding=0),
-			nn.InstanceNorm2d(first_kernels, affine=True),
+			self.norm(first_kernels, affine=True),
 			nn.ReLU()
 			)
 		self.down1 = nn.Sequential(
 			nn.Conv2d(first_kernels, first_kernels*2, kernel_size=3, stride=2, padding=1),
-			nn.InstanceNorm2d(first_kernels*2, affine=True),
+			self.norm(first_kernels*2, affine=True),
 			nn.ReLU()
 			)
 		self.down2 = nn.Sequential(
 			nn.Conv2d(first_kernels*2, first_kernels*4, kernel_size=3, stride=2, padding=1),
-			nn.InstanceNorm2d(first_kernels*4, affine=True),
+			self.norm(first_kernels*4, affine=True),
 			nn.ReLU()
 			)
 
@@ -82,11 +97,11 @@ class G_128(nn.Module):
 			nn_seq = nn.Sequential(
 					nn.ReflectionPad2d(1),
 					nn.Conv2d(first_kernels*4, first_kernels*4, kernel_size=3, stride=1, padding=0),
-					nn.InstanceNorm2d(first_kernels*4, affine=True),
+					self.norm(first_kernels*4, affine=True),
 					nn.ReLU(),
 					nn.ReflectionPad2d(1),
 					nn.Conv2d(first_kernels*4, first_kernels*4, kernel_size=3, stride=1, padding=0),
-					nn.InstanceNorm2d(first_kernels*4, affine=True)
+					self.norm(first_kernels*4, affine=True)
 					)
 			if(torch.cuda.is_available()):
 				nn_seq = nn_seq.cuda()
@@ -94,12 +109,12 @@ class G_128(nn.Module):
 
 		self.up1 = nn.Sequential(
 			nn.ConvTranspose2d(first_kernels*4, first_kernels*2, kernel_size=3, stride=2, padding=1, output_padding=1),
-			nn.InstanceNorm2d(first_kernels*2, affine=True),
+			self.norm(first_kernels*2, affine=True),
 			nn.ReLU()
 			)
 		self.up2 = nn.Sequential(
 			nn.ConvTranspose2d(first_kernels*2, first_kernels, kernel_size=3, stride=2, padding=1, output_padding=1),
-			nn.InstanceNorm2d(first_kernels, affine=True),
+			self.norm(first_kernels, affine=True),
 			nn.ReLU()
 			)
 		self.conv_up = nn.Sequential(
