@@ -8,15 +8,15 @@ class Model:
 	def __init__(self, is_cuda=False):
 		# Training settings
 		self.is_cuda = is_cuda
-		self.batch_size = 1
+		self.batch_size = 16
 		self.total_epoch = 10
-		self.buffer_size = 50
+		self.buffer_size = 0
 
 		# Network architecture
-		self.residual_num = 6 # the number of residual blocks (6 was used in the paper)
+		self.residual_num = 2 # the number of residual blocks (6 was used in the paper)
 		self.d_first_kernels = 16
-		self.d_norm = "instance"
-		self.g_norm = "instance"
+		self.d_norm = "batch"
+		self.g_norm = "batch"
 
 		# Hyperparameters
 		self.g_lr = 0.0002 # (0.0002 on the paper)
