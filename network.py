@@ -11,7 +11,7 @@ channel_size = 3
 
 # Discriminator for a 128 * 128 image
 class D_128(nn.Module):
-	def __init__(self, first_kernels=64, kernel=4, pad=1, stride=2, relu_slope=0.01, norm="instance"):
+	def __init__(self, first_kernels=64, kernel=4, pad=1, stride=2, relu_slope=0.01, norm="instance", dropout_mask=[0,0,0,0,0]):
 		super(D_128, self).__init__()
 
 		self.first_kernels = first_kernels
@@ -19,7 +19,8 @@ class D_128(nn.Module):
 		self.pad = pad # padding size
 		self.stride = stride # stride		
 		self.relu_slope = relu_slope # negative slope of LeakyReLU (0.2 was used in the paper)
-		# [instance: InstanceNorm2d, batch: BatchNorm2d]
+		self.dropout_mask = dropout_mask
+
 		if norm == "instance":
 			self.norm = nn.InstanceNorm2d
 		else:
@@ -68,7 +69,7 @@ class G_128(nn.Module):
 
 		self.first_kernels = first_kernels
 		self.residual_num = residual_num
-		# [instance: InstanceNorm2d, batch: BatchNorm2d]
+		
 		if norm == "instance":
 			self.norm = nn.InstanceNorm2d
 		else:

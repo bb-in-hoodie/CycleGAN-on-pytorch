@@ -23,7 +23,7 @@ class Model:
 		self.d_lr = 0.0001 # (0.0001 on the paper)
 		self.step_size = 5 # (100 on the paper)
 		self.gamma = 0.1
-		self.cc_lambda = 8 # lambda of cycle-consistency loss (10 on the paper)
+		self.cc_lambda = 10 # lambda of cycle-consistency loss (10 on the paper)
 
 		# Discriminators and generators
 		self.g_a = net.G_128(residual_num=self.residual_num, norm=self.g_norm)
