@@ -17,6 +17,7 @@ class Model:
 		self.d_first_kernels = 16
 		self.d_norm = "batch"
 		self.g_norm = "batch"
+		self.d_dropout_mask = [1, 1, 1, 1, 1]
 
 		# Hyperparameters
 		self.g_lr = 0.0002 # (0.0002 on the paper)
@@ -27,9 +28,9 @@ class Model:
 
 		# Discriminators and generators
 		self.g_a = net.G_128(residual_num=self.residual_num, norm=self.g_norm)
-		self.d_a = net.D_128(first_kernels=self.d_first_kernels, norm=self.d_norm)
+		self.d_a = net.D_128(first_kernels=self.d_first_kernels, norm=self.d_norm, dropout_mask=self.d_dropout_mask)
 		self.g_b = net.G_128(residual_num=self.residual_num, norm=self.g_norm)
-		self.d_b = net.D_128(first_kernels=self.d_first_kernels, norm=self.d_norm)
+		self.d_b = net.D_128(first_kernels=self.d_first_kernels, norm=self.d_norm, dropout_mask=self.d_dropout_mask)
 
 		# Loss Function
 		self.criterion_GAN = nn.MSELoss()

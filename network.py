@@ -26,40 +26,45 @@ class D_128(nn.Module):
 		else:
 			self.norm = nn.BatchNorm2d
 
-		self.layer1 = nn.Sequential(
-			nn.Conv2d(channel_size, first_kernels, kernel_size=kernel, stride=stride, padding=pad), # 128 -> 64
-			nn.LeakyReLU(relu_slope)
-			)
-		self.layer2 = nn.Sequential(
-			nn.Conv2d(first_kernels, first_kernels*2, kernel_size=kernel, stride=stride, padding=pad), # 64 -> 32
-			self.norm(first_kernels*2, affine=True),
-			nn.LeakyReLU(relu_slope)
-			)
-		self.layer3 = nn.Sequential(
-			nn.Conv2d(first_kernels*2, first_kernels*4, kernel_size=kernel, stride=stride, padding=pad), # 32 -> 16
-			self.norm(first_kernels*4, affine=True),
-			nn.LeakyReLU(relu_slope)
-			)
-		self.layer4 = nn.Sequential(
-			nn.Conv2d(first_kernels*4, first_kernels*8, kernel_size=kernel, stride=stride, padding=pad), # 16 -> 8
-			self.norm(first_kernels*8, affine=True),
-			nn.LeakyReLU(relu_slope)
-			)
-		self.layer5 = nn.Sequential(
-			nn.Conv2d(first_kernels*8, first_kernels*16, kernel_size=kernel, stride=stride, padding=pad), # 8 -> 4
-			self.norm(first_kernels*16, affine=True),
-			nn.LeakyReLU(relu_slope)
-			)
-		self.score = nn.Conv2d(first_kernels*16, 1, kernel_size=3, stride=1, padding=1) # 4 -> 4
+		model = []
+
+		# Conv1
+		model += [nn.Conv2d(channel_size, first_kernels, kernel_size=kernel, stride=stride, padding=pad)]
+		if dropout_mask[0] == 1: model += [nn.Dropout2d()]
+		model += [nn.LeakyReLU(relu_slope)]
+
+		# Conv2
+		model += [nn.Conv2d(first_kernels, first_kernels*2, kernel_size=kernel, stride=stride, padding=pad), # 64 -> 32
+				 self.norm(first_kernels*2, affine=True)]
+		if dropout_mask[1] == 1: model += [nn.Dropout2d()]
+		model += [nn.LeakyReLU(relu_slope)]
+
+		# Conv3
+		model += [nn.Conv2d(first_kernels*2, first_kernels*4, kernel_size=kernel, stride=stride, padding=pad), # 32 -> 16
+				 self.norm(first_kernels*4, affine=True)]
+		if dropout_mask[2] == 1: model += [nn.Dropout2d()]
+		model += [nn.LeakyReLU(relu_slope)]
+
+		# Conv4
+		model += [nn.Conv2d(first_kernels*4, first_kernels*8, kernel_size=kernel, stride=stride, padding=pad), # 16 -> 8
+				 self.norm(first_kernels*8, affine=True)]
+		if dropout_mask[3] == 1: model += [nn.Dropout2d()]
+		model += [nn.LeakyReLU(relu_slope)]
+
+		# Conv5
+		model += [nn.Conv2d(first_kernels*8, first_kernels*16, kernel_size=kernel, stride=stride, padding=pad), # 8 -> 4
+				 self.norm(first_kernels*16, affine=True)]
+		if dropout_mask[4] == 1: model += [nn.Dropout2d()]
+		model += [nn.LeakyReLU(relu_slope)]
+
+		# Score
+		model += [nn.Conv2d(first_kernels*16, 1, kernel_size=3, stride=1, padding=1)] # 4 -> 4
+
+		self.model = nn.Sequential(*model)
 
 	def forward(self, x):
-		act = self.layer1(x) # act: activation
-		act = self.layer2(act)
-		act = self.layer3(act)
-		act = self.layer4(act)
-		act = self.layer5(act)
-		result = self.score(act)
-		return result
+		out = self.model(x)
+		return out
 
 
 # Generator for a 128 * 128 image
@@ -69,7 +74,7 @@ class G_128(nn.Module):
 
 		self.first_kernels = first_kernels
 		self.residual_num = residual_num
-		
+
 		if norm == "instance":
 			self.norm = nn.InstanceNorm2d
 		else:
