@@ -17,7 +17,7 @@ class Model:
 		self.d_first_kernels = 16
 		self.d_norm = "batch"
 		self.g_norm = "batch"
-		self.d_dropout_mask = [1, 1, 1, 1, 1]
+		self.d_dropout_mask = [0, 1, 0, 1, 0]
 
 		# Hyperparameters
 		self.g_lr = 0.0002 # (0.0002 on the paper)
