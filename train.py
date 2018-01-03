@@ -47,12 +47,12 @@ for epoch in range(m.total_epoch):
 
 	for image, label in iter(train_loader):
 
-		# Make the image as a Variable, create ones and zeros
+		# Make an image as a Variable, create Ones vector and Zeros vector
 		image = Variable(image)		
 		if (is_cuda):
 			image = image.cuda()
 
-		# Set the generators and the discriminators		
+		# Set the generators and the discriminators	depending on the label of the current image	
 		if label[0] == 0: # a -> b -> a
 			g_ally = m.g_a
 			g_ally_optim = m.g_a_optim
@@ -73,7 +73,10 @@ for epoch in range(m.total_epoch):
 			d_enemy_optim = m.d_a_optim
 
 
-		### 1. Train the ally discriminator that the current image is a real one
+		################################################################################
+		# 1. Train the ally discriminator                                              #
+		# : Let the ally discriminator learns that the current image is a real one     #
+		################################################################################
 		d_real_score = d_ally(image)
 		ones = u.get_class_scores(d_real_score.size(), is_ones=True, noisy=True, is_cuda=is_cuda)
 		d_real_loss = m.criterion_GAN(d_real_score, ones)
@@ -82,13 +85,17 @@ for epoch in range(m.total_epoch):
 		d_real_loss.backward()
 		d_ally_optim.step()
 
-		### 2. Trian the enemy discriminator that the created image is a fake one
+
+		################################################################################
+		# 2. Train the enemy discriminator                                             #
+		# : Let the enemy discriminator learns that the generated image is a fake one  #
+		################################################################################
 		fake_enemy_image = g_enemy(image)		
 		if use_buffer:
-			chosen_image = image_buffer.pop(fake_enemy_image)
+			chosen_image = image_buffer.pop(fake_enemy_image) # Use a fake image popped from the image buffer
 		else:
-			chosen_image = fake_enemy_image
-		# When training the enemy discriminator, use a fake image chosen from the pool
+			chosen_image = fake_enemy_image	# Use the generated image without using an image buffer
+
 		d_fake_score = d_enemy(chosen_image)
 		zeros = u.get_class_scores(d_fake_score.size(), is_ones=False, noisy=True, is_cuda=is_cuda)
 		d_fake_loss = m.criterion_GAN(d_fake_score, zeros)
@@ -97,30 +104,43 @@ for epoch in range(m.total_epoch):
 		d_fake_loss.backward()
 		d_enemy_optim.step()
 
-		### 3-1. Train the enemy generator that the fake image should looks realistic
+
+		################################################################################
+		# 3. The enemy generator loss                                                  #
+		# : The enemy generator should generate a realistic image                      #
+		################################################################################	
 		fake_enemy_image = g_enemy(image)
-		# When training the enemy discriminator, use a fake image chosen from the pool
 		d_fake_score = d_enemy(fake_enemy_image)
 		ones = u.get_class_scores(d_fake_score.size(), is_ones=True, noisy=True, is_cuda=is_cuda)
 		g_fake_loss = m.criterion_GAN(d_fake_score, ones)
 
-		### 3-2. Recover the current image and get cycle-consistency loss
+
+		################################################################################
+		# 4. Cycle-consistency loss                                                    #
+		# : The ally generator should recover the generated image                      #
+		#   as the original image                                                      #
+		################################################################################	
 		recovered_image = g_ally(fake_enemy_image)
 		cc_loss = m.criterion_CC(recovered_image, image)
 
-		### 3-3. Sum those two losses and update the weights
-		loss = g_fake_loss + (m.cc_lambda * cc_loss)
 
+		################################################################################
+		# 5. Train both generators                                                     #
+		# : Final loss is a sum of the enemy generator loss and                        #
+		#   the cycle-consistency loss                                                 #
+		################################################################################
+		loss = g_fake_loss + (m.cc_lambda * cc_loss)
 		m.zero_grad_all()
 		loss.backward()
 		g_ally_optim.step()
 		g_enemy_optim.step()
 
+
 		# At each checkpoint, print the log
 		if (index % checkpoint_log == 0):
 			u.print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss)
 
-		# At each checkpoint of saving image, save an image
+		# At each image saving checkpoint, save an image
 		if ((index % checkpoint_save_image == 0) or
 			(epoch == 0 and index <= checkpoint_log * start_spurt_num and index % checkpoint_log == 0)):
 			u.save_image(image_size, image, fake_enemy_image, epoch, index)
@@ -128,6 +148,6 @@ for epoch in range(m.total_epoch):
 
 		index += 1
 
-# Print time and save the models
+# Print the execution time and save the models
 u.print_exec_time(time.time()-init_time, is_final=True)
 u.save_model(m)
