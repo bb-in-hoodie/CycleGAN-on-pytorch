@@ -70,6 +70,12 @@ def save_model(m, epoch, index):
 	torch.save(m.d_a.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_dis_a.pkl')
 	torch.save(m.d_b.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_dis_b.pkl')
 
+def load_model(m, path):
+	m.g_a.load_state_dict(torch.load(path+'/gen_a.pkl'))
+	m.g_b.load_state_dict(torch.load(path+'/gen_b.pkl'))
+	m.d_a.load_state_dict(torch.load(path+'/dis_a.pkl'))
+	m.d_b.load_state_dict(torch.load(path+'/dis_b.pkl'))
+
 
 def check_cuda_available():
 	is_cuda = False

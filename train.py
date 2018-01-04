@@ -25,6 +25,8 @@ init_time = time.time()
 
 # Create a new model
 m = Model(is_cuda)
+#load_path = "./models/171129-2253"
+#u.load_model(m, load_path)
 
 # Create a new image buffer
 use_buffer = m.buffer_size > 0
