@@ -2,6 +2,7 @@
 data/*/
 result/*/
 result/hyperparameters.txt
+!result/examples
 models/*.pkl
 models/*/
 
