@@ -17,7 +17,7 @@ is_cuda = u.check_cuda_available()
 image_size = 128
 image_location = './data/CelebA_Man2Woman/train' #'./data/TestDataset'
 checkpoint_log = 500
-checkpoint_save_image = 5000
+checkpoint_save = 5000
 start_spurt_num = 15 # save images on the first n checkpoints
 
 # Initial time
@@ -141,13 +141,14 @@ for epoch in range(m.total_epoch):
 			u.print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss)
 
 		# At each image saving checkpoint, save an image
-		if ((index % checkpoint_save_image == 0) or
+		if ((index % checkpoint_save == 0) or
 			(epoch == 0 and index <= checkpoint_log * start_spurt_num and index % checkpoint_log == 0)):
 			u.save_image(image_size, image, fake_enemy_image, epoch, index)
+			u.save_model(m, epoch, index)
 			u.print_exec_time(time.time()-init_time)
 
 		index += 1
 
 # Print the execution time and save the models
 u.print_exec_time(time.time()-init_time, is_final=True)
-u.save_model(m)
+u.save_model(m, epoch, index)

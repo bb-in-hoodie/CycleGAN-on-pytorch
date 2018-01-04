@@ -64,11 +64,11 @@ def print_exec_time(exec_time, is_final=False):
 	print("====================================================\n")
 
 
-def save_model(m):
-	torch.save(m.g_a.state_dict(), './models/gen_a.pkl')
-	torch.save(m.g_b.state_dict(), './models/gen_b.pkl')
-	torch.save(m.d_a.state_dict(), './models/dis_a.pkl')
-	torch.save(m.d_b.state_dict(), './models/dis_b.pkl')
+def save_model(m, epoch, index):
+	torch.save(m.g_a.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_gen_a.pkl')
+	torch.save(m.g_b.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_gen_b.pkl')
+	torch.save(m.d_a.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_dis_a.pkl')
+	torch.save(m.d_b.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_dis_b.pkl')
 
 
 def check_cuda_available():
