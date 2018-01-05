@@ -9,7 +9,7 @@ class Model:
 		# Training settings
 		self.is_cuda = is_cuda
 		self.batch_size = 16
-		self.total_epoch = 10
+		self.total_epoch = 20
 		self.buffer_size = 0
 
 		# Network architecture
@@ -22,9 +22,10 @@ class Model:
 		# Hyperparameters
 		self.g_lr = 0.0002 # (0.0002 on the paper)
 		self.d_lr = 0.0001 # (0.0001 on the paper)
-		self.step_size = 5 # (100 on the paper)
+		self.step_size = 10 # (100 on the paper)
 		self.gamma = 0.1
 		self.cc_lambda = 8 # lambda of cycle-consistency loss (10 on the paper)
+		self.tvd_lambda = 100
 
 		# Discriminators and generators
 		self.g_a = net.G_128(residual_num=self.residual_num, norm=self.g_norm)

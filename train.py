@@ -25,8 +25,10 @@ init_time = time.time()
 
 # Create a new model
 m = Model(is_cuda)
-#load_path = "./models/171129-2253"
-#u.load_model(m, load_path)
+
+# Load pre-trained model
+#load_path = "./models/180105-0925"
+#u.load_model(m, load_path, 9, 12627)
 
 # Create a new image buffer
 use_buffer = m.buffer_size > 0
@@ -48,7 +50,6 @@ for epoch in range(m.total_epoch):
 	m.scheduler_step()
 
 	for image, label in iter(train_loader):
-
 		# Make an image as a Variable, create Ones vector and Zeros vector
 		image = Variable(image)		
 		if (is_cuda):
@@ -127,11 +128,20 @@ for epoch in range(m.total_epoch):
 
 
 		################################################################################
-		# 5. Train both generators                                                     #
-		# : Final loss is a sum of the enemy generator loss and                        #
-		#   the cycle-consistency loss                                                 #
+		# 5. Total variation denoising loss                                            #
+		# : The generated image should look natural & clear                            #
 		################################################################################
-		loss = g_fake_loss + (m.cc_lambda * cc_loss)
+		g_enemy_tvd_loss = u.tvd_loss(fake_enemy_image.data)
+		g_ally_tvd_loss = u.tvd_loss(recovered_image.data)
+		tvd_loss = g_enemy_tvd_loss + g_ally_tvd_loss
+			
+
+		################################################################################
+		# 6. Train both generators                                                     #
+		# : Final loss is sum of the enemy generator loss, cycle-consistency loss      #
+		#   and total variation denoising loss                                         #
+		################################################################################
+		loss = g_fake_loss + (m.cc_lambda * cc_loss) + (m.tvd_lambda * tvd_loss)
 		m.zero_grad_all()
 		loss.backward()
 		g_ally_optim.step()
@@ -140,17 +150,18 @@ for epoch in range(m.total_epoch):
 
 		# At each checkpoint, print the log
 		if (index % checkpoint_log == 0):
-			u.print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss)
+			u.print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss, tvd_loss)
 
 		# At each image saving checkpoint, save an image
 		if ((index % checkpoint_save == 0) or
 			(epoch == 0 and index <= checkpoint_log * start_spurt_num and index % checkpoint_log == 0)):
 			u.save_image(image_size, image, fake_enemy_image, epoch, index)
-			u.save_model(m, epoch, index)
 			u.print_exec_time(time.time()-init_time)
 
 		index += 1
 
+	# Save a model every last iteration of an epoch
+	u.save_model(m, epoch, index)
+
 # Print the execution time and save the models
 u.print_exec_time(time.time()-init_time, is_final=True)
-u.save_model(m, epoch, index)

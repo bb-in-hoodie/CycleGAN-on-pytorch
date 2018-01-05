@@ -22,7 +22,7 @@ def get_class_scores(size, is_ones, noisy=False, is_cuda=False, noise_width=0.3)
 
 	return scores
 
-def print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss):
+def print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss, tvd_loss):
 	g_lr, d_lr = m.g_lr, m.d_lr
 	for group in m.g_a_optim.param_groups:
 		g_lr = group['lr']
@@ -34,6 +34,8 @@ def print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss):
 		%(d_lr, d_real_loss.data[0], d_fake_loss.data[0]))
 	print("G lr: %1.1E, G loss : %.4f, CC loss : %.4f * %.1f (cc_lambda)"
 		%(g_lr, g_fake_loss.data[0], cc_loss.data[0], m.cc_lambda))
+	print("TVD loss: %.4f * %.1f (tvd_lambda)"
+		%(tvd_loss, m.tvd_lambda))
 
 
 def save_image(image_size, image, fake_enemy_image, epoch, index):		
@@ -70,11 +72,12 @@ def save_model(m, epoch, index):
 	torch.save(m.d_a.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_dis_a.pkl')
 	torch.save(m.d_b.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_dis_b.pkl')
 
-def load_model(m, path):
-	m.g_a.load_state_dict(torch.load(path+'/gen_a.pkl'))
-	m.g_b.load_state_dict(torch.load(path+'/gen_b.pkl'))
-	m.d_a.load_state_dict(torch.load(path+'/dis_a.pkl'))
-	m.d_b.load_state_dict(torch.load(path+'/dis_b.pkl'))
+
+def load_model(m, path, epoch, index):
+	m.g_a.load_state_dict(torch.load(path + '/' + str(epoch) + '_' + str(index) + '_gen_a.pkl'))
+	m.g_b.load_state_dict(torch.load(path + '/' + str(epoch) + '_' + str(index) + '_gen_b.pkl'))
+	m.d_a.load_state_dict(torch.load(path + '/' + str(epoch) + '_' + str(index) + '_dis_a.pkl'))
+	m.d_b.load_state_dict(torch.load(path + '/' + str(epoch) + '_' + str(index) + '_dis_b.pkl'))
 
 
 def check_cuda_available():
@@ -83,3 +86,16 @@ def check_cuda_available():
 		is_cuda = True
 		torch.backends.cudnn.benchmark = True
 	return is_cuda
+
+
+def tvd_loss(tensor):
+	(batch_size, channel_size, width, height) = tensor.size()
+
+	original = tensor[:, :, :width-1, :height-1]
+	shifted_x = tensor[:, :, 1:width, :height-1]
+	shifted_y = tensor[:, :, :width-1, 1:height]
+
+	abs_arr = torch.abs(original - shifted_x) + torch.abs(original - shifted_y)
+
+	loss = torch.sum(abs_arr) / (batch_size * channel_size * width * height)
+	return loss
