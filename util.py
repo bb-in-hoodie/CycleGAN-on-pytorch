@@ -35,7 +35,7 @@ def print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss, t
 	print("G lr: %1.1E, G loss : %.4f, CC loss : %.4f * %.1f (cc_lambda)"
 		%(g_lr, g_fake_loss.data[0], cc_loss.data[0], m.cc_lambda))
 	print("TVD loss: %.4f * %.1f (tvd_lambda)"
-		%(tvd_loss, m.tvd_lambda))
+		%(tvd_loss.data[0], m.tvd_lambda))
 
 
 def save_image(image_size, image, fake_enemy_image, epoch, index):		
@@ -88,12 +88,12 @@ def check_cuda_available():
 	return is_cuda
 
 
-def tvd_loss(tensor):
-	(batch_size, channel_size, width, height) = tensor.size()
+def tvd_loss(image):
+	(batch_size, channel_size, width, height) = image.size()
 
-	original = tensor[:, :, :width-1, :height-1]
-	shifted_x = tensor[:, :, 1:width, :height-1]
-	shifted_y = tensor[:, :, :width-1, 1:height]
+	original = image[:, :, :width-1, :height-1]
+	shifted_x = image[:, :, 1:width, :height-1]
+	shifted_y = image[:, :, :width-1, 1:height]
 
 	abs_arr = torch.abs(original - shifted_x) + torch.abs(original - shifted_y)
 

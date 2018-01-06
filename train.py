@@ -124,40 +124,51 @@ for epoch in range(m.total_epoch):
 		#   as the original image                                                      #
 		################################################################################	
 		recovered_image = g_ally(fake_enemy_image)
-		cc_loss = m.criterion_CC(recovered_image, image)
+		cc_loss = m.criterion_CC(recovered_image, image)			
+
+		
+		################################################################################
+		# 5. Train both generators                                                     #
+		# : Final loss is sum of the enemy generator loss and cycle-consistency loss   #
+		################################################################################
+		loss = g_fake_loss + (m.cc_lambda * cc_loss)
+		m.zero_grad_all()
+		loss.backward(retain_graph=True)
+		g_ally_optim.step()
+		g_enemy_optim.step()
 
 
 		################################################################################
-		# 5. Total variation denoising loss                                            #
+		# 6. Total variation denoising loss                                            #
 		# : The generated image should look natural & clear                            #
 		################################################################################
-		g_enemy_tvd_loss = u.tvd_loss(fake_enemy_image.data)
-		g_ally_tvd_loss = u.tvd_loss(recovered_image.data)
-		tvd_loss = g_enemy_tvd_loss + g_ally_tvd_loss
-			
+		g_enemy_tvd_loss = u.tvd_loss(fake_enemy_image)
+		if (is_cuda):
+			g_enemy_tvd_loss = g_enemy_tvd_loss.cuda()
 
-		################################################################################
-		# 6. Train both generators                                                     #
-		# : Final loss is sum of the enemy generator loss, cycle-consistency loss      #
-		#   and total variation denoising loss                                         #
-		################################################################################
-		loss = g_fake_loss + (m.cc_lambda * cc_loss) + (m.tvd_lambda * tvd_loss)
+		g_ally_tvd_loss = u.tvd_loss(recovered_image)
+		if (is_cuda):
+			g_ally_tvd_loss = g_ally_tvd_loss.cuda()
+
+		tvd_loss_sum = (g_enemy_tvd_loss + g_ally_tvd_loss)
+		tvd_loss = tvd_loss_sum * m.tvd_lambda
+			
 		m.zero_grad_all()
-		loss.backward()
+		tvd_loss.backward()
 		g_ally_optim.step()
 		g_enemy_optim.step()
 
 
 		# At each checkpoint, print the log
 		if (index % checkpoint_log == 0):
-			u.print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss, tvd_loss)
+			u.print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss, tvd_loss_sum)
 
 		# At each image saving checkpoint, save an image
 		if ((index % checkpoint_save == 0) or
 			(epoch == 0 and index <= checkpoint_log * start_spurt_num and index % checkpoint_log == 0)):
 			u.save_image(image_size, image, fake_enemy_image, epoch, index)
 			u.print_exec_time(time.time()-init_time)
-
+			
 		index += 1
 
 	# Save a model every last iteration of an epoch
