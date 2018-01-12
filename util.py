@@ -38,7 +38,7 @@ def print_log(m, epoch, index, d_real_loss, d_fake_loss, g_fake_loss, cc_loss, t
 		%(tvd_loss.data[0], m.tvd_lambda))
 
 
-def save_image(image_size, image, fake_enemy_image, epoch, index):		
+def save_image(m, image_size, image, fake_enemy_image, epoch, index):		
 	concat_img = []
 	image_num = image.size(0)
 	fake_image_num = fake_enemy_image.size(0)
@@ -51,7 +51,7 @@ def save_image(image_size, image, fake_enemy_image, epoch, index):
 	concat_size = len(concat_img)
 	concat_img = torch.cat(concat_img)
 	concat_img = concat_img.view(concat_size, 3, image_size, image_size) / 2 + 0.5
-	torchvision.utils.save_image(concat_img.data, "./result/" + str(epoch) + "_" + str(index) + ".png")
+	torchvision.utils.save_image(concat_img.data, "./result/" + m.save_path + "/" + str(epoch) + "_" + str(index) + ".png")
 
 
 def print_exec_time(exec_time, is_final=False):		
@@ -67,10 +67,10 @@ def print_exec_time(exec_time, is_final=False):
 
 
 def save_model(m, epoch, index):
-	torch.save(m.g_a.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_gen_a.pkl')
-	torch.save(m.g_b.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_gen_b.pkl')
-	torch.save(m.d_a.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_dis_a.pkl')
-	torch.save(m.d_b.state_dict(), './models/' + str(epoch) + '_' + str(index) + '_dis_b.pkl')
+	torch.save(m.g_a.state_dict(), './models/' + m.save_path + "/" + str(epoch) + '_' + str(index) + '_gen_a.pkl')
+	torch.save(m.g_b.state_dict(), './models/' + m.save_path + "/" + str(epoch) + '_' + str(index) + '_gen_b.pkl')
+	torch.save(m.d_a.state_dict(), './models/' + m.save_path + "/" + str(epoch) + '_' + str(index) + '_dis_a.pkl')
+	torch.save(m.d_b.state_dict(), './models/' + m.save_path + "/" + str(epoch) + '_' + str(index) + '_dis_b.pkl')
 
 
 def load_model(m, path, epoch, index):

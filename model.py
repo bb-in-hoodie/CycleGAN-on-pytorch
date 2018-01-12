@@ -6,14 +6,17 @@ import network as net
 
 class Model:
 	def __init__(self, is_cuda=False):
+		# Save path (models, results)
+		self.save_path = "180112-1229" #"YYMMDD_HHMM"
+
 		# Training settings
 		self.is_cuda = is_cuda
 		self.batch_size = 16
-		self.total_epoch = 20
+		self.total_epoch = 10
 		self.buffer_size = 0
 
 		# Network architecture
-		self.residual_num = 2 # the number of residual blocks (6 was used in the paper)
+		self.residual_num = 4 # the number of residual blocks (6 was used in the paper)
 		self.d_first_kernels = 16
 		self.d_norm = "batch"
 		self.g_norm = "batch"
@@ -24,7 +27,7 @@ class Model:
 		self.d_lr = 0.0001 # (0.0001 on the paper)
 		self.step_size = 10 # (100 on the paper)
 		self.gamma = 0.1
-		self.cc_lambda = 8 # lambda of cycle-consistency loss (10 on the paper)
+		self.cc_lambda = 10 # lambda of cycle-consistency loss (10 on the paper)
 		self.tvd_lambda = 5
 
 		# Discriminators and generators

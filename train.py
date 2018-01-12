@@ -27,7 +27,7 @@ init_time = time.time()
 m = Model(is_cuda)
 
 # Load pre-trained model
-#load_path = "./models/180105-0925"
+#load_path = "./models/180107-1025"
 #u.load_model(m, load_path, 9, 12627)
 
 # Create a new image buffer
@@ -41,7 +41,7 @@ train_folder = torchvision.datasets.ImageFolder(root=image_location, transform=t
 if m.batch_size == 1:
 	train_loader = torch.utils.data.DataLoader(train_folder, batch_size=m.batch_size, shuffle=True)
 else:
-	sampler = SwitchingBatchSampler(train_folder, m.batch_size)
+	sampler = SwitchingBatchSampler(train_folder, m.batch_size, drop_last=True)
 	train_loader = torch.utils.data.DataLoader(train_folder, batch_sampler=sampler)
 
 # Train
@@ -166,13 +166,14 @@ for epoch in range(m.total_epoch):
 		# At each image saving checkpoint, save an image
 		if ((index % checkpoint_save == 0) or
 			(epoch == 0 and index <= checkpoint_log * start_spurt_num and index % checkpoint_log == 0)):
-			u.save_image(image_size, image, fake_enemy_image, epoch, index)
+			u.save_image(m, image_size, image, fake_enemy_image, epoch, index)
 			u.print_exec_time(time.time()-init_time)
 			
 		index += 1
 
-	# Save a model every last iteration of an epoch
+	# Save the model and the image every last iteration of an epoch
 	u.save_model(m, epoch, index)
+	u.save_image(m, image_size, image, fake_enemy_image, epoch, index)
 
 # Print the execution time and save the models
 u.print_exec_time(time.time()-init_time, is_final=True)
