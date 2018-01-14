@@ -7,7 +7,7 @@ import network as net
 class Model:
 	def __init__(self, is_cuda=False):
 		# Save path (models, results)
-		self.save_path = "180112-1229" #"YYMMDD_HHMM"
+		self.save_path = "XXXXXX_XXXX" #"YYMMDD_HHMM"
 
 		# Training settings
 		self.is_cuda = is_cuda
