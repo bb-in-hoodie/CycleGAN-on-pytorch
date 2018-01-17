@@ -38,6 +38,10 @@ $ python train.py
 ![FtoM_08](result/examples/FtoM_08.png)
 ![FtoM_09](result/examples/FtoM_09.png)
 ![FtoM_10](result/examples/FtoM_10.png)
+![FtoM_11](result/examples/FtoM_11.png)
+![FtoM_12](result/examples/FtoM_12.png)
+![FtoM_13](result/examples/FtoM_13.png)
+![FtoM_14](result/examples/FtoM_14.png)
 ### 2) Male to Female
 ![MtoF_01](result/examples/MtoF_01.png)
 ![MtoF_02](result/examples/MtoF_02.png)
@@ -49,3 +53,7 @@ $ python train.py
 ![MtoF_08](result/examples/MtoF_08.png)
 ![MtoF_09](result/examples/MtoF_09.png)
 ![MtoF_10](result/examples/MtoF_10.png)
+![MtoF_11](result/examples/MtoF_11.png)
+![MtoF_12](result/examples/MtoF_12.png)
+![MtoF_13](result/examples/MtoF_13.png)
+![MtoF_14](result/examples/MtoF_14.png)
